@@ -96,12 +96,12 @@ These variables should all be applied to the frontend.
 
 These variables should all be applied to the backend.
 - `GAMMA_SECRET`: Default `secret`.
-- `GAMMA_CLIENT_ID`, `GAMMA_CLIENT_SECRET`: Id and secret of the client from Gamma. Default is `id`/`secret`.
+- `GAMMA_CLIENT_ID`: Id of the client from Gamma. Default is `id`.
 - `GAMMA_AUTHORIZATION_URI`:
-  - Should be the full URL, probably: `https://songbook.chalmers.it/api/oauth/authorize`.
+  - Should be the full URL, probably: `https://gamma.chalmers.it/api/oauth/authorize`.
   - Default: `http://localhost:8081/api/oauth/authorize`.
 - `GAMMA_REDIRECT_URI`:
-  - Should as well be the full URL, probably: `https://gamma.chalmers.it/api/auth/account/callback`.
+  - Should as well be the full URL, probably: `https://songbook.chalmers.it/auth/account/callback`.
   - Default `http://localhost:3001/auth/account/callback`.
 - `GAMMA_ME_URI`: 
   - Yep, full URL, probably: `https://gamma.chalmers.it/api/users/me`
