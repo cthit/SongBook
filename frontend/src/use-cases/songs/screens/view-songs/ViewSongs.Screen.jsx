@@ -34,6 +34,7 @@ const ViewSongs = () => {
     useEffect(() => {
         if (!loading) {
             if (song_id === digITSong.song_id) {
+                honk.play();
                 openDialog(SongDetails(admin, digITSong, history, text));
             } else if (song_id) {
                 const song = getSong(song_id);
@@ -107,6 +108,8 @@ const ViewSongs = () => {
     );
 };
 
+const honk = new Audio("/assets/honk.mp3");
+honk.volume = 0.15;
 const searchTermForDigIT = "digit";
 const digITSong = {
     "song_id": "digit",
