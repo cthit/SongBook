@@ -6,6 +6,7 @@ import {
     DigitLayout
 } from "@cthit/react-digit-components";
 import { BASE_ROUTE } from "../../../../../../../app/App.routes";
+import { digITSong } from "../../../ViewSongs.Screen";
 import React from "react";
 import styled from "styled-components";
 
@@ -33,7 +34,9 @@ const SongPreview = ({ song, history, text, tags }) => {
             to={BASE_ROUTE + song.song_id}
             style={{ textDecoration: "none" }}
         >
-            <DigitDesign.Card>
+            <DigitDesign.Card
+                className={song.song_id === digITSong.song_id ? "digit-song-preview" : null}
+            >
                 <DigitDesign.CardBody>
                     <DigitLayout.Column>
                         <DigitText.Title

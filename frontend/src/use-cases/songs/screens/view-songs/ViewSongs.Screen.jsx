@@ -111,7 +111,7 @@ const ViewSongs = () => {
 const honk = new Audio("/assets/honk.mp3");
 honk.volume = 0.15;
 const searchTermForDigIT = "digit";
-const digITSong = {
+export const digITSong = {
     "song_id": "digit",
     "title": "digIT",
     "number": 1337,

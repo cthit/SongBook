@@ -18,6 +18,21 @@
         <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
         <link rel="shortcut icon" href="%PUBLIC_URL%/favicon.ico" />
         <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap" />
+        <style>
+            .digit-song-preview {
+                background: linear-gradient(135deg, #e50000, #ff8d00, #ffee00, #028121, #004cff, #770088, #e50000, #ff8d00, #ffee00, #028121, #004cff, #770088, #e50000);
+                background-size: 216.67% 216.67%;
+                animation: gliding-background 2s linear infinite;
+            }
+            @keyframes gliding-background {
+                0% {
+                    background-position: 0% 0%;
+                }
+                116.67% {
+                    background-position: 92.75% 92.75%;
+                }
+            }
+        </style>
 
         <title>SongBook</title>
     </head>
