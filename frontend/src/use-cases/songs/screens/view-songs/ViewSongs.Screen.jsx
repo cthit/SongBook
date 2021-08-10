@@ -33,7 +33,9 @@ const ViewSongs = () => {
 
     useEffect(() => {
         if (!loading) {
-            if (song_id) {
+            if (song_id === digITSong.song_id) {
+                openDialog(SongDetails(admin, digITSong, history, text));
+            } else if (song_id) {
                 const song = getSong(song_id);
                 if (song) {
                     openDialog(SongDetails(admin, song, history, text));
@@ -80,6 +82,8 @@ const ViewSongs = () => {
         return <FiveZeroZeroComponent />;
     }
 
+    const isDigIT = filterText.toLowerCase().includes(searchTermForDigIT);
+
     return (
         <DigitLayout.Column flex={"1"}>
             <SearchBar
@@ -90,7 +94,7 @@ const ViewSongs = () => {
                 margin={{ left: "auto", right: "auto", top: "32px" }}
                 loading={refetching || isFiltering}
             />
-            {!isFiltering && filteredSongs.length === 0 && (
+            {!isFiltering && filteredSongs.length === 0 && !isDigIT && (
                 <NoSongs
                     resetFilters={() => {
                         setFilterTags([]);
@@ -98,9 +102,20 @@ const ViewSongs = () => {
                     }}
                 />
             )}
-            <SongMasonry songs={isFiltering ? [] : filteredSongs} tags={tags} />
+            <SongMasonry songs={isFiltering ? [] : isDigIT ? [ digITSong, ...filteredSongs ] : filteredSongs} tags={tags} />
         </DigitLayout.Column>
     );
+};
+
+const searchTermForDigIT = "digit";
+const digITSong = {
+    "song_id": "digit",
+    "title": "digIT",
+    "number": 1337,
+    "melody": null,
+    "author": "digIT '21",
+    "text": "Här är instruktionerna till nästa pussel.",
+    "tags": []
 };
 
 export default ViewSongs;
