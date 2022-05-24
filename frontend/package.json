@@ -17,7 +17,7 @@
     "react-router-dom": "5.2.0",
     "styled-components": "5.2.1"
   },
-  "proxy": "http://172.18.0.1:5000",
+  "proxy": "http://songbook-backend:5000",
   "scripts": {
     "start": "react-app-rewired start",
     "build": "react-app-rewired build",

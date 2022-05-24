@@ -18,38 +18,38 @@ services:
       - ./frontend:/usr/src/app
     networks:
       - songbook
-#    depends_on:
-#      - songbook-backend
-#
-#  songbook-backend:
-#    depends_on:
-#      - songbook-db
-#    build:
-#      context: ./backend/
-#      dockerfile: dev.Dockerfile
-#    environment:
-#      SONGBOOK_POSTGRES_USER: songbook
-#      SONGBOOK_POSTGRES_PASSWORD: password
-#      SONGBOOK_POSTGRES_HOST: songbook-db
-#      SONGBOOK_POSTGRES_PORT: 5432
-#      SONGBOOK_POSTGRES_DB: postgres
-#      SONGBOOK_SECRET_KEY: secret
-#      INIT_DATA_PATH: setup/md/
-#      GAMMA_SECRET: secret
-#      GAMMA_CLIENT_ID: id
-#      GAMMA_REDIRECT_URI: http://localhost:3001/auth/account/callback
-#      GAMMA_ME_URI: http://songbook_gamma-backend_1:8081/api/users/me
-#      GAMMA_TOKEN_URI: http://songbook_gamma-backend_1:8081/api/oauth/token
-#      GAMMA_AUTHORIZATION_URI: http://localhost:8081/api/oauth/authorize
-#      GAMMA_ADMIN_AUTHORITY: songbook
-#      PYTHONUNBUFFERED: 0
-#    volumes:
-#      - ./backend/:/usr/src/songbook/backend
-#    networks:
-#      - songbook
-#      - gamma
-#    ports:
-#      - 5000:5000
+    depends_on:
+      - songbook-backend
+
+  songbook-backend:
+    depends_on:
+      - songbook-db
+    build:
+      context: ./backend/
+      dockerfile: dev.Dockerfile
+    environment:
+      SONGBOOK_POSTGRES_USER: songbook
+      SONGBOOK_POSTGRES_PASSWORD: password
+      SONGBOOK_POSTGRES_HOST: songbook-db
+      SONGBOOK_POSTGRES_PORT: 5432
+      SONGBOOK_POSTGRES_DB: postgres
+      SONGBOOK_SECRET_KEY: secret
+      INIT_DATA_PATH: src/setup/md/
+      GAMMA_SECRET: secret
+      GAMMA_CLIENT_ID: client
+      GAMMA_REDIRECT_URI: http://localhost:3001/auth/account/callback
+      GAMMA_ME_URI: http://gamma-backend:8081/api/users/me
+      GAMMA_TOKEN_URI: http://gamma-backend:8081/api/oauth/token
+      GAMMA_AUTHORIZATION_URI: http://localhost:8081/api/oauth/authorize
+      GAMMA_ADMIN_AUTHORITY: songbook
+      PYTHONUNBUFFERED: 0
+    volumes:
+      - ./backend/:/usr/src/songbook/backend
+    networks:
+      - songbook
+      - gamma
+    ports:
+      - 5000:5000
 
   songbook-db:
     image: postgres

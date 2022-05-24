@@ -2,16 +2,10 @@ FROM python:3.8-alpine
 
 WORKDIR /usr/src/songbook/backend
 
-COPY requirements.txt .
+#RUN useradd songbook
+#RUN chown -R songbook /usr/src/songbook/backend
 
-RUN pip install --no-cache-dir -r requirements.txt
-
-COPY . .
-
-RUN useradd songbook
-RUN chown -R songbook /usr/src/songbook/backend
-
-USER songbook
+#USER songbook
 
 ENV SONGBOOK_POSTGRES_USER songbook
 ENV SONGBOOK_POSTGRES_PASSWORD password

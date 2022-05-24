@@ -4,7 +4,7 @@ The digital songbook of the software engineering student division with all the s
 
 ## Development
 
-The easiest way to get started is via docker with the backend running in an IDE.
+The easiest way to get started is docker compose and setting the gamma secret and client in docker-compose.yml.
 
 ### Docker-compose
 `docker-compose up --build`
@@ -15,7 +15,9 @@ The easiest way to get started is via docker with the backend running in an IDE.
 * Postgres database for the backend.
 * The frontend, backend, a database, and a Redis instance for [Gamma](https://github.com/cthit/gamma).
 
-### Set up backend
+### Running backend seperately
+Comment out from depens_on: songbook-backend all the way down to songbook_db.
+
 For the backend to connect to the other dependencies, a proxy has to be set up. 
 This value, `proxy` is specified in `frontend/package.json` and should have the value of the Gateway address for the frontend's docker container.
 It can be found by following the steps below.
