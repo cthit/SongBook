@@ -1,4 +1,4 @@
-wait_for_postgres() (
+wait_for_postgres() {
     first_iteration=true
     while ! pg_isready -h "$SONGBOOK_POSTGRES_HOST" -p "$SONGBOOK_POSTGRES_PORT" -q; do
         if [ -n "$first_iteration" ]; then
@@ -11,7 +11,7 @@ wait_for_postgres() (
         sleep 1
     done
     if [ -z "$first_iteration" ]; then echo; fi
-)
+}
 
 wait_for_postgres
 python -u src/app.py
