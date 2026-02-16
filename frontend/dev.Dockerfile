@@ -1,10 +1,10 @@
 FROM node:15-alpine
 WORKDIR /usr/src/app
-COPY package.json yarn.lock ./
+COPY --chown=node:node package.json ./
 RUN yarn install --network-timeout 10000000
 
-COPY src src
-COPY public public
-COPY config-overrides.js ./
+COPY --chown=node:node src src
+COPY --chown=node:node public public
+COPY --chown=node:node config-overrides.js ./
 
 CMD yarn start

@@ -16,6 +16,7 @@ services:
       REACT_APP_GAMMA_ADMIN_AUTHORITY: songbook
     volumes:
       - ./frontend:/usr/src/app
+      - /usr/src/app/node_modules
     networks:
       - songbook
     depends_on:

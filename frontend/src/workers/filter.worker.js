@@ -1,6 +1,7 @@
-importScripts("https://rawgit.com/farzher/fuzzysort/master/fuzzysort.js");
+import fuzzysort from "fuzzysort";
 
-onmessage = function({ data: { songs, filterText, filterTags } }) {
+/* eslint-disable-next-line no-restricted-globals */
+self.onmessage = function({ data: { songs, filterText, filterTags } }) {
     let filteredSongs = songs;
 
     if (filterTags.length) {

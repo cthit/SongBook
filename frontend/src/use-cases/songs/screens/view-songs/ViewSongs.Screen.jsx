@@ -14,6 +14,7 @@ import SongMasonry from "./components/song-masonry";
 import FiveZeroZeroComponent from "../../../../common/components/five-zero-zero";
 import { useSongs } from "../../Songs.context";
 import { NoSongs } from "./components/no-songs/NoSongs.component";
+import FilterWorker from "../../../../workers/filter.worker.js";
 
 const ViewSongs = () => {
     const history = useHistory();
@@ -54,7 +55,7 @@ const ViewSongs = () => {
     const [timeoutVal, setTimeoutVal] = useState(0);
     useEffect(() => {
         setIsFiltering(true);
-        const filterWorker = new Worker("/workers/filter.worker.js");
+        const filterWorker = new FilterWorker();
         filterWorker.onmessage = e => {
             setFilteredSongs(e.data);
             setTimeoutVal(timeoutVal + 1);

@@ -7,13 +7,12 @@ USER node
 
 WORKDIR /usr/src/songbook/frontend
 
-COPY ./src ./src
-COPY ./public ./public
-COPY package.json .
-COPY config-overrides.js .
+COPY --chown=node:node ./src ./src
+COPY --chown=node:node ./public ./public
+COPY --chown=node:node package.json .
+COPY --chown=node:node config-overrides.js .
 
-RUN yarn install 
-RUN yarn global add react-scripts
+RUN yarn install
 RUN yarn build
 
 FROM nginx:alpine
