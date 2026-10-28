@@ -135,7 +135,7 @@ export async function createSong(input: SongInput): Promise<string> {
   try {
     return await withTransaction((client) => insertSong(client, input))
   } catch (error) {
-    if (isUniqueViolation(error, 'unq_song__title')) {
+    if (isUniqueViolation(error, 'title')) {
       throw new ApiError(400, 'SONG_TITLE_ALREADY_EXIST')
     }
     throw error
@@ -166,7 +166,7 @@ export async function updateSong(songId: string, input: SongInput): Promise<void
   try {
     await withTransaction((client) => updateSongInTransaction(client, songId, input))
   } catch (error) {
-    if (isUniqueViolation(error, 'unq_song__title')) {
+    if (isUniqueViolation(error, 'title')) {
       throw new ApiError(400, 'SONG_TITLE_ALREADY_EXIST')
     }
     throw error

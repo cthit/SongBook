@@ -190,7 +190,7 @@ export async function approveSuggestion(
       return songId
     })
   } catch (error) {
-    if (isUniqueViolation(error, 'unq_song__title')) {
+    if (isUniqueViolation(error, 'title')) {
       throw new ApiError(400, 'SONG_TITLE_ALREADY_EXIST')
     }
     throw error

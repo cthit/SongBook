@@ -46,7 +46,7 @@ export async function createTag(input: TagInput): Promise<string> {
       return tagId
     })
   } catch (error) {
-    if (isUniqueViolation(error, 'unq_tag__name')) throw new ApiError(400, 'TAG_NAME_ALREADY_EXIST')
+    if (isUniqueViolation(error, 'name')) throw new ApiError(400, 'TAG_NAME_ALREADY_EXIST')
     throw error
   }
 }
@@ -66,7 +66,7 @@ export async function updateTag(tagId: string, input: TagInput): Promise<void> {
       if (result.rowCount === 0) throw new ApiError(404, 'TAG_NOT_EXIST')
     })
   } catch (error) {
-    if (isUniqueViolation(error, 'unq_tag__name')) throw new ApiError(400, 'TAG_NAME_ALREADY_EXIST')
+    if (isUniqueViolation(error, 'name')) throw new ApiError(400, 'TAG_NAME_ALREADY_EXIST')
     throw error
   }
 }

@@ -38,7 +38,8 @@ export function getDb(): Promise<Pool> {
 
 async function initDb(): Promise<Pool> {
   const pool = createPool()
-  pool.on('error', (error) => console.error('Unexpected Postgres error:', error))
+  // Idle clients can error when the server restarts, pg reconnects on the next query
+  pool.on('error', (error) => console.error('Postgres connection error:', error.message))
   try {
     await runMigrations(pool)
   } catch (error) {
@@ -90,8 +91,15 @@ export async function transaction<T>(
   }
 }
 
-/** Postgres unique_violation, optionally for a specific constraint */
-export function isUniqueViolation(error: unknown, constraint?: string): boolean {
-  const pgError = error as { code?: string; constraint?: string }
-  return pgError?.code === '23505' && (!constraint || pgError.constraint === constraint)
+/**
+ * Postgres unique_violation on `column`. Matched on the error detail rather than the constraint
+ * name, since the names Pony gave the production constraints may differ from the baseline's.
+ */
+export function isUniqueViolation(error: unknown, column: string): boolean {
+  const pgError = error as { code?: string; detail?: string }
+  return (
+    pgError?.code === '23505' &&
+    (pgError.detail?.includes(`(${column})=`) || pgError.detail?.includes(`("${column}")=`)) ===
+      true
+  )
 }
