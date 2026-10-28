@@ -163,7 +163,8 @@ pnpm test:e2e         # Playwright, needs Docker
 ```
 
 The end-to-end tests start PostgreSQL with testcontainers, migrate and seed it, start a mock gamma
-(`e2e/mock-gamma`) and run the app with `next build && next start` (`E2E_DEV=true` uses `next dev`).
+(`e2e/mock-gamma`) and run the app like the Docker image does, `next build` and then the standalone
+`server.js` (`pnpm start`; `E2E_DEV=true` uses `next dev`).
 Run `pnpm exec playwright install chromium` once first.
 
 ```
