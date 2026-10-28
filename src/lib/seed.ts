@@ -67,10 +67,9 @@ export function parseSongbookMarkdown(markdown: string): ParsedCategory[] {
     if (!category) continue
     const [name, data] = category
     if (name.trim() === '') continue
-    const songs = sliceAt(data, startsOf(data, SONG_HEADING), (chunk) => chunk)
-      .filter((chunk) => chunk.length > 10)
-      .map(parseSong)
-      .filter((song): song is ParsedSong => song !== null && song.title !== '')
+    const songs = sliceAt(data, startsOf(data, SONG_HEADING), parseSong).filter(
+      (song): song is ParsedSong => song !== null && song.title !== '' && song.text !== '',
+    )
     result.push({ name: name.trim(), songs })
   }
   return result

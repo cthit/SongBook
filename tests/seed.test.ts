@@ -68,3 +68,14 @@ describe('parseSong', () => {
     })
   })
 })
+
+describe('parseSongbookMarkdown with short songs', () => {
+  it('keeps short songs and drops songs without title or text', () => {
+    expect(parseSongbookMarkdown('IT\n==\n\nA\n---\n\nB\n')).toEqual([
+      { name: 'IT', songs: [{ title: 'A', melody: '', author: 'Unknown', text: 'B' }] },
+    ])
+    expect(parseSongbookMarkdown('IT\n==\n\nA\n---\n\n\nC\n---\n\nD\n')).toEqual([
+      { name: 'IT', songs: [{ title: 'C', melody: '', author: 'Unknown', text: 'D' }] },
+    ])
+  })
+})
