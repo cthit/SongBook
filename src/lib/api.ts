@@ -63,14 +63,23 @@ export function withHandler<Context = unknown>(
   }
 }
 
-export async function readJsonObject(request: Request): Promise<Record<string, unknown>> {
-  // Forces a CORS preflight for cross-origin browser requests
-  if (!request.headers.get('content-type')?.toLowerCase().startsWith('application/json')) {
-    throw new ApiError(415, 'EXPECTED_JSON')
-  }
+/**
+ * The request body as a JSON object. With `optional`, a missing or empty body is `{}`; any other
+ * body still has to be JSON.
+ */
+export async function readJsonObject(
+  request: Request,
+  { optional = false }: { optional?: boolean } = {},
+): Promise<Record<string, unknown>> {
+  // Requiring JSON forces a CORS preflight for cross-origin browser requests
+  const isJson = !!request.headers.get('content-type')?.toLowerCase().startsWith('application/json')
+  if (!isJson && !optional) throw new ApiError(415, 'EXPECTED_JSON')
+  const text = await request.text()
+  if (optional && text.trim() === '') return {}
+  if (!isJson) throw new ApiError(415, 'EXPECTED_JSON')
   let body: unknown
   try {
-    body = await request.json()
+    body = JSON.parse(text)
   } catch {
     throw new ApiError(400, 'INVALID_JSON')
   }

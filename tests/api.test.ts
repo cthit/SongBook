@@ -46,4 +46,20 @@ describe('readJsonObject', () => {
       readJsonObject(request({ 'content-type': 'application/json' }, '[1]')),
     ).rejects.toMatchObject({ status: 400 })
   })
+
+  it('only accepts a missing or empty body as {} when the body is optional', async () => {
+    const optional = { optional: true }
+    await expect(readJsonObject(request({}), optional)).resolves.toEqual({})
+    await expect(readJsonObject(request({}, ''), optional)).resolves.toEqual({})
+    await expect(
+      readJsonObject(request({ 'content-type': 'application/json' }, '{"comment":"ok"}'), optional),
+    ).resolves.toEqual({ comment: 'ok' })
+    await expect(
+      readJsonObject(request({ 'content-type': 'text/plain' }, 'comment=ok'), optional),
+    ).rejects.toMatchObject({ status: 415, code: 'EXPECTED_JSON' })
+    await expect(
+      readJsonObject(request({ 'content-type': 'application/json' }, '{'), optional),
+    ).rejects.toMatchObject({ status: 400, code: 'INVALID_JSON' })
+    await expect(readJsonObject(request({}))).rejects.toMatchObject({ status: 415 })
+  })
 })

@@ -7,7 +7,8 @@ type Context = { params: Promise<{ id: string }> }
 export const POST = withHandler<Context>('approve suggestion', async (request, context) => {
   const admin = await requireAdmin()
   const { id } = await context.params
-  const body = await readJsonObject(request).catch(() => ({}))
+  // The review comment is optional, so is the body
+  const body = await readJsonObject(request, { optional: true })
   const songId = await approveSuggestion(id, admin, parseReviewComment(body))
   return jsonData({ song_id: songId })
 })
