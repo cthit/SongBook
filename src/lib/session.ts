@@ -137,7 +137,9 @@ const RETURN_TO_BASE = 'http://songbook.invalid'
 function localPath(value: string): string | null {
   // URL parsing strips tabs/newlines and treats backslashes as slashes, reject them up front
   if (!value.startsWith('/') || /[\x00-\x1f\x7f\\]/.test(value)) return null
-  const url = new URL(value, RETURN_TO_BASE)
+  // Throws for some values starting with `//`, e.g. `//[` or `//%`, which are hosts not paths
+  const url = URL.parse(value, RETURN_TO_BASE)
+  if (!url) return null
   // Dot segments (also %2e) are resolved here, e.g. `/.//evil.example` becomes `//evil.example`,
   // which a later `new URL(path, APP_URL)` would read as a protocol relative URL
   if (url.origin !== RETURN_TO_BASE || /^\/[/\\]/.test(url.pathname)) return null

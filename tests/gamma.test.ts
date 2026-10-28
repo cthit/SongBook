@@ -1,5 +1,7 @@
 import { createHash, randomBytes } from 'crypto'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { NextRequest } from 'next/server'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
+import { GET as login } from '@/app/auth/login/route'
 import {
   buildAuthorizeUrl,
   discover,
@@ -11,6 +13,7 @@ import {
   verifyIdToken,
   type GammaConfig,
 } from '@/lib/gamma'
+import { LOGIN_COOKIE, decodeLoginState, sessionKey } from '@/lib/session'
 import { MOCK_USERS, startMockGamma } from '../e2e/mock-gamma/server'
 
 const APP_URL = 'http://localhost:3999'
@@ -102,6 +105,33 @@ describe('gamma sign in', () => {
     expect(claims.iss).toBe(`http://127.0.0.1:${port}`)
     expect(claims.cid).toBe(MOCK_USERS.admin.cid)
     expect(authorities).toEqual(['songbook'])
+  })
+})
+
+describe('/auth/login', () => {
+  it('falls back to / for a returnTo that is not a valid URL', async () => {
+    vi.stubEnv('APP_URL', APP_URL)
+    vi.stubEnv('GAMMA_URL', `http://localhost:${port}`)
+    vi.stubEnv('GAMMA_CLIENT_ID', CLIENT.clientId)
+    try {
+      for (const returnTo of ['%2F%2F', '%2F%2F%5B']) {
+        const response = await login(new NextRequest(`${APP_URL}/auth/login?returnTo=${returnTo}`))
+        expect(response.status, returnTo).toBe(307)
+        const location = new URL(response.headers.get('location')!)
+        expect(location.origin + location.pathname).toBe(
+          `http://localhost:${port}/oauth2/authorize`,
+        )
+        expect(location.searchParams.get('client_id')).toBe(CLIENT.clientId)
+        const cookie = response.headers
+          .getSetCookie()
+          .find((header) => header.startsWith(`${LOGIN_COOKIE}=`))
+        const token = cookie?.slice(LOGIN_COOKIE.length + 1).split(';')[0]
+        const state = await decodeLoginState(token, sessionKey())
+        expect(state?.returnTo).toBe('/')
+      }
+    } finally {
+      vi.unstubAllEnvs()
+    }
   })
 })
 

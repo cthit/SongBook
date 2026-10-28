@@ -96,6 +96,12 @@ describe('safeReturnTo', () => {
       '/\t\t//evil.example',
       '/.\n//evil.example',
       '/\r/evil.example',
+      // Not valid URLs at all, `new URL` throws for these
+      '//',
+      '//@/',
+      '//%2f',
+      '//[',
+      '//%',
     ]
     for (const value of external) {
       expect(safeReturnTo(value), value).toBe('/')
