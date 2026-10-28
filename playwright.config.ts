@@ -8,6 +8,8 @@ const command = process.env.E2E_DEV === 'true' ? 'pnpm next dev' : 'pnpm build &
 export default defineConfig({
   testDir: './e2e',
   testMatch: '**/*.spec.ts',
+  // Needs a local gamma, see playwright.gamma.config.ts
+  testIgnore: 'real-gamma.spec.ts',
   // The specs share one database, run them one at a time
   fullyParallel: false,
   workers: 1,

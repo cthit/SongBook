@@ -44,3 +44,31 @@ jobs:
             playwright-report/
             test-results/
           retention-days: 7
+
+  # The real gamma 2.5.3 (ghcr.io/cthit/gamma:2.5.3) from the compose `gamma` profile, see README.md,
+  # "Local gamma"
+  e2e-gamma:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: docker compose --profile gamma up -d --wait songbook-db gamma
+      # Waits for gamma, creates the client and authority and writes .env.local
+      - run: pnpm gamma:setup
+      - run: pnpm db:migrate && pnpm db:seed
+      # Starts `pnpm dev` on http://localhost:3000
+      - run: REAL_GAMMA=1 pnpm test:e2e:gamma
+      - if: failure()
+        run: docker compose --profile gamma logs --no-color gamma | tail -n 200
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report-gamma
+          path: test-results/
+          retention-days: 7

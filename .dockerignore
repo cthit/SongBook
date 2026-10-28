@@ -12,6 +12,7 @@ README.md
 e2e
 tests
 playwright.config.ts
+playwright.gamma.config.ts
 vitest.config.mts
 test-results
 playwright-report

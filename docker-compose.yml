@@ -1,6 +1,7 @@
 # Quick start:        docker compose up songbook-db           (database for `pnpm dev`)
-# Everything local:   docker compose --profile gamma up --build   (with a .env, see README.md)
-# See README.md for how to create the gamma client, API key and authority.
+# Local gamma:        docker compose --profile gamma up -d songbook-db gamma, then `pnpm gamma:setup`
+# Everything local:   docker compose --profile gamma up -d --build   (after `pnpm gamma:setup`)
+# See README.md, "Local gamma".
 
 services:
   songbook:
@@ -16,8 +17,8 @@ services:
       SONGBOOK_POSTGRES_USER: songbook
       SONGBOOK_POSTGRES_PASSWORD: password
       SONGBOOK_POSTGRES_DB: postgres
-      # For the gamma from the `gamma` profile below set GAMMA_URL=http://localhost:8081 and
-      # GAMMA_INTERNAL_URL=http://gamma:8081 in .env (see README.md, "Local gamma")
+      # `pnpm gamma:setup` writes the values for the gamma from the `gamma` profile below to .env:
+      # GAMMA_URL=http://localhost:8081 and GAMMA_INTERNAL_URL=http://gamma:8081 (README.md, "Local gamma")
       GAMMA_URL: ${GAMMA_URL:-https://gamma.chalmers.it}
       GAMMA_INTERNAL_URL: ${GAMMA_INTERNAL_URL:-}
       GAMMA_CLIENT_ID: ${GAMMA_CLIENT_ID:-}
@@ -26,7 +27,8 @@ services:
       GAMMA_API_KEY_TOKEN: ${GAMMA_API_KEY_TOKEN:-}
       GAMMA_ADMIN_AUTHORITY: ${GAMMA_ADMIN_AUTHORITY:-songbook}
     depends_on:
-      - songbook-db
+      songbook-db:
+        condition: service_healthy
 
   songbook-db:
     image: postgres:16
@@ -37,14 +39,25 @@ services:
       POSTGRES_DB: postgres
     ports:
       - '5432:5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U songbook -d postgres']
+      interval: 2s
+      timeout: 5s
+      retries: 30
     volumes:
       - songbook_db:/var/lib/postgresql/data
 
-  # Optional local gamma: docker compose --profile gamma up
+  # Optional local gamma 2.5.3 with mock data, see README.md, "Local gamma". The image has no shell,
+  # so there is no healthcheck; it takes up to a minute to start (longer emulated on arm64).
   gamma:
     image: ghcr.io/cthit/gamma:2.5.3
+    # Only published for amd64
+    platform: linux/amd64
     profiles: [gamma]
+    restart: unless-stopped
     environment:
+      # The browser's URL of gamma, used for the `picture` claim and links in emails. The issuer and
+      # the discovery document follow the Host of each request instead.
       BASE_URL: http://localhost:8081
       DB_HOST: gamma-db
       DB_PORT: 5432
@@ -53,17 +66,24 @@ services:
       DB_PASSWORD: password
       REDIS_HOST: gamma-redis
       REDIS_PORT: 6379
+      # Not production: plain HTTP cookies and the admin user `admin` gets the password `password1337`
       PRODUCTION: 'false'
+      # Creates the mock users (password `password1337`) and groups from gamma's mock/mock.json
       IS_MOCKING: 'true'
       ADMIN_SETUP: 'true'
       GOTIFY_KEY: 123abc
       GOTIFY_BASE_URL: http://gamma-gotify:80
+      # The default ./uploads/ isn't writable in the image
+      UPLOAD_FOLDER: /tmp/uploads/
     ports:
       - '8081:8081'
     depends_on:
-      - gamma-db
-      - gamma-redis
-      - gamma-gotify
+      gamma-db:
+        condition: service_healthy
+      gamma-redis:
+        condition: service_healthy
+      gamma-gotify:
+        condition: service_started
 
   gamma-db:
     image: postgres:16
@@ -72,13 +92,25 @@ services:
       POSTGRES_USER: gamma
       POSTGRES_PASSWORD: password
       POSTGRES_DB: postgres
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U gamma -d postgres']
+      interval: 2s
+      timeout: 5s
+      retries: 30
 
   gamma-redis:
     image: redis:7
     profiles: [gamma]
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 2s
+      timeout: 5s
+      retries: 30
 
+  # Gamma sends emails through gotify; in mock mode they are only logged
   gamma-gotify:
     image: cthit/gotify:latest
+    platform: linux/amd64
     profiles: [gamma]
     environment:
       GOTIFY_PRE-SHARED-KEY: 123abc

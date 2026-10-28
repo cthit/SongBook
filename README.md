@@ -89,26 +89,55 @@ can be cleared at go-live; the songbook's PostgreSQL must not be.
 
 ### Local gamma
 
-`docker compose --profile gamma up --build` starts the songbook, its database and gamma 2.5.3 (with its
-own PostgreSQL, Redis and a mocked gotify) on http://localhost:8081. Gamma prints the generated admin
-password in its log (`docker compose logs gamma`). It runs with mock data (`IS_MOCKING=true`); the mock
-users log in with the password `password1337`. Create the client, API key and authority as described
-above with the redirect url `http://localhost:3000/auth/callback`, then create a `.env` file next to
-`docker-compose.yml` and restart the `songbook` service (`docker compose --profile gamma up -d`):
+The `gamma` profile in `docker-compose.yml` runs gamma 2.5.3 (`ghcr.io/cthit/gamma:2.5.3`, amd64 only,
+emulated on Apple silicon) with its own PostgreSQL, Redis and a mocked gotify on http://localhost:8081.
+It runs with gamma's mock data (`IS_MOCKING=true`) and `PRODUCTION=false`, so the admin is `admin` and
+every user has the password `password1337` (the admin's is also printed in `docker compose logs gamma` as
+`Admin user created -> cid:admin,password:...`). It takes about a minute to start.
 
 ```sh
-GAMMA_URL=http://localhost:8081           # what your browser uses
-GAMMA_INTERNAL_URL=http://gamma:8081      # what the songbook container uses
-GAMMA_CLIENT_ID=...
-GAMMA_CLIENT_SECRET=...
-GAMMA_API_KEY_ID=...
-GAMMA_API_KEY_TOKEN=...
+docker compose --profile gamma up -d --wait songbook-db gamma
+pnpm gamma:setup   # creates the client and authority in gamma, writes .env.local and .env
+pnpm db:migrate && pnpm db:seed
+pnpm dev           # http://localhost:3000, or run the songbook in docker instead:
+# docker compose --profile gamma up -d --build
 ```
+
+`pnpm gamma:setup` (`scripts/setup-local-gamma.ts`) logs in to gamma as the admin with Playwright and
+does the steps from [Gamma](#gamma): it creates the official client "SongBook local" with the redirect
+url `${APP_URL}/auth/callback` (`APP_URL` defaults to `http://localhost:3000`) and an api key, adds the
+client authority `songbook` for the super group `digit`, and writes the `GAMMA_*` variables to
+`.env.local` and `.env`, leaving other lines alone. If the credentials in `.env.local` still work it does
+nothing; `pnpm gamma:setup --force` creates a new client (gamma shows secrets only once, so clients from
+earlier runs are left behind). After `docker compose --profile gamma down -v` gamma starts empty, run it
+again.
+
+Sign in with gamma's mock users, password `password1337`:
+
+| User                              | In the songbook                                   |
+| --------------------------------- | ------------------------------------------------- |
+| `amartin`, `shudson`, `kmalone`   | Admin (members of digIT, the super group `digit`) |
+| `mscott` and the other mock users | Member                                            |
+
+The first sign in of each user shows gamma's consent screen, choose **Authorize**.
 
 Gamma 2.5.3 has no fixed issuer: it derives the issuer and all URLs in its discovery document from the
 `Host` of the request. The songbook fetches discovery, tokens, keys and authorities through
-`GAMMA_INTERNAL_URL`, so the ID token's issuer is `http://gamma:8081`, which is what it is verified
-against. Only the sign in redirect (and the "View account" link) go to `GAMMA_URL`.
+`GAMMA_INTERNAL_URL` and verifies the ID token against the issuer of that discovery document; only the
+sign in redirect (and the "View account" link) go to `GAMMA_URL`. That is why the two files differ:
+
+| Songbook runs as                      | `GAMMA_URL`             | `GAMMA_INTERNAL_URL`    | File         |
+| ------------------------------------- | ----------------------- | ----------------------- | ------------ |
+| `pnpm dev` / `pnpm start` on the host | `http://localhost:8081` | `http://localhost:8081` | `.env.local` |
+| compose `songbook` service            | `http://localhost:8081` | `http://gamma:8081`     | `.env`       |
+
+`next dev` also reads `.env`, but `.env.local` wins. Gamma's `BASE_URL` stays `http://localhost:8081`,
+the browser's URL: gamma uses it for the `picture` claim and links in emails.
+
+`REAL_GAMMA=1 pnpm test:e2e:gamma` runs `e2e/real-gamma.spec.ts` against this gamma and the songbook on
+`APP_URL` (it starts `pnpm dev` if nothing is listening there): `/auth/login` must redirect to
+`http://localhost:8081/oauth2/authorize`, `amartin` signs in, is an admin and edits a song (it is put
+back afterwards), `mscott` signs in as a member and gets 403. It is not part of `pnpm test:e2e` or CI.
 
 ## Database
 
@@ -160,6 +189,7 @@ pnpm typecheck
 pnpm test             # unit tests (vitest)
 pnpm test:integration # migrations and data layer against a Pony-shaped PostgreSQL (needs Docker)
 pnpm test:e2e         # Playwright, needs Docker
+REAL_GAMMA=1 pnpm test:e2e:gamma # Playwright against the local gamma, see Local gamma
 ```
 
 The end-to-end tests start PostgreSQL with testcontainers, migrate and seed it, start a mock gamma
@@ -172,7 +202,7 @@ src/app             pages and route handlers (src/app/api/**/route.ts, /auth/*, 
 src/components      React components
 src/lib             database, auth, gamma, i18n and other helpers
 src/db/migrations   SQL migrations
-scripts             pnpm db:migrate / db:seed / db:reset
+scripts             pnpm db:migrate / db:seed / db:reset / gamma:setup
 data/sangbok.md     the songbook used for seeding
 e2e                 Playwright tests and the mock gamma
 tests               unit and integration tests

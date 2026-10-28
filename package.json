@@ -12,10 +12,12 @@
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
     "test:e2e": "playwright test",
+    "test:e2e:gamma": "playwright test -c playwright.gamma.config.ts",
     "db:migrate": "tsx --env-file-if-exists=.env.local scripts/migrate.ts",
     "db:seed": "tsx --env-file-if-exists=.env.local scripts/seed.ts",
     "db:reset": "tsx --env-file-if-exists=.env.local scripts/reset.ts",
-    "test:integration": "VITEST_INTEGRATION=true vitest run"
+    "test:integration": "VITEST_INTEGRATION=true vitest run",
+    "gamma:setup": "tsx scripts/setup-local-gamma.ts"
   },
   "dependencies": {
     "fuzzysort": "^4.0.2",
