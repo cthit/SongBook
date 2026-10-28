@@ -14,12 +14,27 @@ import {
 /** Authorities are re-checked against gamma this often so revocations apply quickly */
 export const AUTHORITY_REFRESH_MS = 5 * 60 * 1000
 
+/**
+ * The refresh interval, AUTHORITY_REFRESH_MS unless GAMMA_AUTHORITY_REFRESH_SECONDS sets a shorter
+ * one (the end-to-end tests use 1 second). It can't be made longer.
+ */
+export function authorityRefreshMs(env: NodeJS.ProcessEnv = process.env): number {
+  const value = env.GAMMA_AUTHORITY_REFRESH_SECONDS?.trim()
+  const seconds = value ? Number(value) : NaN
+  if (!Number.isFinite(seconds) || seconds < 0) return AUTHORITY_REFRESH_MS
+  return Math.min(seconds * 1000, AUTHORITY_REFRESH_MS)
+}
+
 export function isAdminFromAuthorities(authorities: readonly string[], adminAuthority: string) {
   return authorities.includes(adminAuthority)
 }
 
-export function needsAuthorityRefresh(user: SessionUser, now = Date.now()): boolean {
-  return now - user.authoritiesCheckedAt >= AUTHORITY_REFRESH_MS
+export function needsAuthorityRefresh(
+  user: SessionUser,
+  now = Date.now(),
+  refreshMs = authorityRefreshMs(),
+): boolean {
+  return now - user.authoritiesCheckedAt >= refreshMs
 }
 
 /** Returns the user with fresh authorities if the session's check is older than 5 minutes */
@@ -50,7 +65,7 @@ const authorityCache = globalThis as typeof globalThis & {
 async function cachedFetchAuthorities(sub: string): Promise<string[]> {
   const map = (authorityCache.songbookAuthorities ??= new Map())
   const cached = map.get(sub)
-  if (cached && Date.now() - cached.at < AUTHORITY_REFRESH_MS) return cached.authorities
+  if (cached && Date.now() - cached.at < authorityRefreshMs()) return cached.authorities
   const authorities = await fetchAuthorities(gammaConfig(), sub)
   map.set(sub, { authorities, at: Date.now() })
   return authorities

@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import {
   AUTHORITY_REFRESH_MS,
+  authorityRefreshMs,
   isAdminFromAuthorities,
   needsAuthorityRefresh,
   refreshAuthorities,
@@ -34,6 +35,20 @@ describe('authority checks', () => {
   it('refreshes after five minutes', () => {
     expect(needsAuthorityRefresh(user, now + AUTHORITY_REFRESH_MS - 1)).toBe(false)
     expect(needsAuthorityRefresh(user, now + AUTHORITY_REFRESH_MS)).toBe(true)
+  })
+
+  it('can shorten, but not lengthen, the refresh interval', () => {
+    const env = (value?: string) =>
+      authorityRefreshMs({ NODE_ENV: 'test', GAMMA_AUTHORITY_REFRESH_SECONDS: value })
+    expect(env(undefined)).toBe(AUTHORITY_REFRESH_MS)
+    expect(env('')).toBe(AUTHORITY_REFRESH_MS)
+    expect(env('nope')).toBe(AUTHORITY_REFRESH_MS)
+    expect(env('-1')).toBe(AUTHORITY_REFRESH_MS)
+    expect(env('1')).toBe(1000)
+    expect(env('0')).toBe(0)
+    expect(env('3600')).toBe(AUTHORITY_REFRESH_MS)
+    expect(needsAuthorityRefresh(user, now + 1000, 1000)).toBe(true)
+    expect(needsAuthorityRefresh(user, now + 999, 1000)).toBe(false)
   })
 
   it('keeps fresh sessions without asking gamma', async () => {

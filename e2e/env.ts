@@ -32,4 +32,8 @@ export const appEnv: Record<string, string> = {
   GAMMA_REDIRECT_URI: GAMMA.redirectUri,
   GAMMA_ADMIN_AUTHORITY: 'songbook',
   SESSION_SECRET: 'e2e-session-secret-that-is-long-enough-1234567890',
+  // Re-check authorities after 1 second instead of 5 minutes, see authority-revocation.spec.ts
+  GAMMA_AUTHORITY_REFRESH_SECONDS: '1',
 }
+
+export const AUTHORITY_REFRESH_MS = Number(appEnv.GAMMA_AUTHORITY_REFRESH_SECONDS) * 1000
