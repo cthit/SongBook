@@ -51,7 +51,10 @@ function SongCardComponent({
         {texts.Author}: {song.author || texts.Unknown}
       </p>
       <p className="text-sm text-gray-700">Mel: {song.melody || texts.Unknown}</p>
-      <Markdown className="mt-2 text-gray-700">{startOfText(song.text)}</Markdown>
+      {/* The card is a link, so links in the lyrics are shown as text */}
+      <Markdown className="mt-2 text-gray-700" links={false}>
+        {startOfText(song.text)}
+      </Markdown>
       <div className="mt-3">
         <SongTags song={song} tagsById={tagsById} />
       </div>

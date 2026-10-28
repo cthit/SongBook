@@ -1,6 +1,9 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { Markdown } from '@/components/Markdown'
+import { Providers } from '@/components/Providers'
+import { SongCard } from '@/components/SongCard'
+import type { Song } from '@/lib/types'
 
 const render = (source: string) => renderToStaticMarkup(<Markdown>{source}</Markdown>)
 
@@ -27,5 +30,31 @@ describe('Markdown', () => {
     expect(html).toContain('href="https://chalmers.it"')
     expect(html).toContain('rel="noopener noreferrer nofollow"')
     expect(html).not.toContain('<img')
+  })
+})
+
+describe('SongCard', () => {
+  const song: Song = {
+    song_id: 'crsi',
+    number: 3,
+    title: 'LÄNKAD',
+    author: 'Unknown',
+    melody: '',
+    text: 'Se [chalmers.it](https://chalmers.it) och <https://example.com> för mer',
+    tags: [],
+    hidden: false,
+  }
+
+  it('does not nest links when the lyrics contain links', () => {
+    const html = renderToStaticMarkup(
+      <Providers initialLanguage="en" languageFromCookie user={null}>
+        <SongCard song={song} tagsById={new Map()} onOpen={() => {}} />
+      </Providers>,
+    )
+    // Only the card itself is a link
+    expect(html.match(/<a[\s>]/g)).toHaveLength(1)
+    expect(html).toContain('href="/crsi"')
+    expect(html).toContain('<span>chalmers.it</span>')
+    expect(html).toContain('<span>https://example.com</span>')
   })
 })
