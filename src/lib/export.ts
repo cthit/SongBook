@@ -1,22 +1,69 @@
 import type { Song, Tag } from '@/lib/types'
 
-const HAS_MELODY_LINE = /(^|\n)\*?[mM][eE][lL]:/
-const HAS_AUTHOR_LINE = /(^|\n)\*?[tT][eE][xX][tT]: /
+// Same lines as the seed parser reads (`MELODY` / `AUTHOR` in seed.ts), as whole lines
+const MELODY_LINE = /^(\*?[mM][eE][lL]:)([^*]+)(.*)$/
+const AUTHOR_LINE = /^(\*?[tT][eE][xX][tT]: )([^*]+)(.*)$/
 const UNTAGGED = 'Övrigt'
 
 const underline = (title: string, char: '=' | '-') => char.repeat(Math.max(3, title.length))
+const oneLine = (value: string) => value.replace(/\s*\n\s*/g, ' ').trim()
+
+/** `lines` without `lines[index]`, and without an empty line next to it if it stood alone */
+function removeLine(lines: string[], index: number): string[] {
+  const blankAfter = index + 1 < lines.length && lines[index + 1].trim() === ''
+  const blankBefore = index === 0 || lines[index - 1].trim() === ''
+  return lines.toSpliced(index, blankAfter && blankBefore ? 2 : 1)
+}
+
+/**
+ * Seeded songs contain their `Mel:` / `Text:` line in the lyrics, which is what the seed parser
+ * reads. The song's fields are authoritative: the first such line (the one the parser reads) gets
+ * the current value, keeping its formatting, and when the field is empty every such line is
+ * removed so the parser doesn't pick up another one. Returns null when there is no such line.
+ */
+function replaceLine(
+  lines: string[],
+  pattern: RegExp,
+  value: string,
+  format: (label: string, value: string, rest: string) => string,
+): string[] | null {
+  let index = lines.findIndex((line) => pattern.test(line))
+  if (index === -1) return null
+  if (value) {
+    const [, label, current, rest] = pattern.exec(lines[index])!
+    // Unchanged lines are kept exactly as they are, e.g. `Mel:Snickerboa`
+    return current.trim() === value ? lines : lines.with(index, format(label, value, rest))
+  }
+  let result = lines
+  for (; index !== -1; index = result.findIndex((line) => pattern.test(line))) {
+    result = removeLine(result, index)
+  }
+  return result
+}
 
 function songToMarkdown(song: Song): string {
-  const lines = [song.title, underline(song.title, '-'), '']
-  // Seeded songs already contain their Mel:/Text: lines, only add them when missing
-  if (song.melody && !HAS_MELODY_LINE.test(song.text)) {
-    lines.push(`*Mel: ${song.melody}*`, '')
-  }
-  lines.push(song.text.trim(), '')
-  if (song.author && song.author !== 'Unknown' && !HAS_AUTHOR_LINE.test(song.text)) {
-    lines.push(`*Text: ${song.author}*`, '')
-  }
-  return lines.join('\n')
+  const melody = oneLine(song.melody)
+  const author = song.author === 'Unknown' ? '' : oneLine(song.author)
+  let lines = song.text.trim().split('\n')
+  const withMelody = replaceLine(
+    lines,
+    MELODY_LINE,
+    melody,
+    (label, v, rest) => `${label} ${v}${rest}`,
+  )
+  const withAuthor = replaceLine(
+    withMelody ?? lines,
+    AUTHOR_LINE,
+    author,
+    (label, v, rest) => `${label}${v}${rest}`,
+  )
+  lines = withAuthor ?? withMelody ?? lines
+
+  const result = [song.title, underline(song.title, '-'), '']
+  if (melody && !withMelody) result.push(`*Mel: ${melody}*`, '')
+  result.push(lines.join('\n').trim(), '')
+  if (author && !withAuthor) result.push(`*Text: ${author}*`, '')
+  return result.join('\n')
 }
 
 /**

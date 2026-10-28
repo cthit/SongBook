@@ -89,4 +89,74 @@ describe('songbookToMarkdown', () => {
     })
     expect(parsed[0].songs[0]).toMatchObject({ title: 'UTAN TAGG', melody: '', author: 'Unknown' })
   })
+
+  /** Exports `songs` under one tag and parses the result again, like an export + re-seed */
+  function roundTrip(songs: Song[]) {
+    const tag: Tag = {
+      tag_id: 'tttt',
+      name: 'IT',
+      pretty_name_sv: 'IT',
+      pretty_name_en: 'IT',
+      song: [],
+    }
+    return parseSongbookMarkdown(songbookToMarkdown(songs, [tag])).flatMap((c) => c.songs)
+  }
+
+  it('exports edited and cleared melodies and authors, not the stale lines in the lyrics', () => {
+    const { songs } = seededSongbook()
+    const original = songs.find((song) => song.title === 'SKÅL FÖR IT')!
+    // The seeded lyrics contain both lines
+    expect(original.text).toMatch(/^Mel: Vikingen$/m)
+    expect(original.text).toMatch(/^\*?Text: P\.R\.I\.T\. -04/m)
+
+    const edited = {
+      ...original,
+      melody: 'Gubben Noak',
+      author: 'Kulturnämnden -26',
+      tags: ['tttt'],
+    }
+    const [reparsedEdited] = roundTrip([edited])
+    expect(reparsedEdited).toMatchObject({ melody: 'Gubben Noak', author: 'Kulturnämnden -26' })
+    expect(reparsedEdited.text).not.toContain('Vikingen')
+    expect(reparsedEdited.text).not.toContain('P.R.I.T.')
+    expect(reparsedEdited.text).toContain('När IT har kalas')
+
+    const cleared = { ...original, melody: '', author: '', tags: ['tttt'] }
+    const [reparsedCleared] = roundTrip([cleared])
+    expect(reparsedCleared).toMatchObject({ melody: '', author: 'Unknown' })
+    expect(reparsedCleared.text).not.toMatch(/Mel:|Text:/)
+    expect(reparsedCleared.text.startsWith('När IT har kalas')).toBe(true)
+  })
+
+  it('round trips every seeded song after editing all melodies and authors', () => {
+    const { songs } = seededSongbook()
+    const edited = songs.map((song, i) => ({
+      ...song,
+      melody: i % 3 === 0 ? '' : `Melodi ${i}`,
+      author: i % 4 === 0 ? '' : `Författare ${i}`,
+    }))
+    const { tags } = seededSongbook()
+    const reparsed = parseSongbookMarkdown(songbookToMarkdown(edited, tags)).flatMap(
+      (category) => category.songs,
+    )
+    expect(reparsed.map((song) => song.title)).toEqual(edited.map((song) => song.title))
+    expect(reparsed.map((song) => song.melody)).toEqual(edited.map((song) => song.melody))
+    expect(reparsed.map((song) => song.author)).toEqual(
+      edited.map((song) => song.author || 'Unknown'),
+    )
+  })
+
+  it('round trips a minimal song', () => {
+    const song: Song = {
+      song_id: 'aaaa',
+      number: 1,
+      title: 'A',
+      author: '',
+      melody: '',
+      text: 'B',
+      tags: ['tttt'],
+      hidden: false,
+    }
+    expect(roundTrip([song])).toEqual([{ title: 'A', melody: '', author: 'Unknown', text: 'B' }])
+  })
 })
