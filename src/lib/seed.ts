@@ -76,7 +76,8 @@ export function parseSongbookMarkdown(markdown: string): ParsedCategory[] {
   return result
 }
 
-export type SeedResult = { seeded: false; reason: string } | { seeded: true; tags: number; songs: number }
+export type SeedResult =
+  { seeded: false; reason: string } | { seeded: true; tags: number; songs: number }
 
 /** Inserts the songbook, but only into an empty `song` table */
 export async function seedDatabase(pool: Pool, markdown: string): Promise<SeedResult> {

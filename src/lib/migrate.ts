@@ -8,11 +8,15 @@ const MIGRATION_LOCK_KEY = 4_242_017
 const MIGRATION_FILE = /^(\d{4})_[\w-]+\.sql$/
 
 export function migrationsDir(): string {
-  return process.env.SONGBOOK_MIGRATIONS_DIR ?? path.join(process.cwd(), 'src', 'db', 'migrations')
+  return (
+    process.env.SONGBOOK_MIGRATIONS_DIR ??
+    path.join(/*turbopackIgnore: true*/ process.cwd(), 'src', 'db', 'migrations')
+  )
 }
 
 export async function listMigrations(dir = migrationsDir()): Promise<string[]> {
-  const files = await fs.readdir(dir)
+  // Migrations are bundled via outputFileTracingIncludes in next.config.js
+  const files = await fs.readdir(/*turbopackIgnore: true*/ dir)
   return files.filter((file) => MIGRATION_FILE.test(file)).sort()
 }
 
@@ -42,7 +46,7 @@ export async function runMigrations(
     const pending = (await listMigrations(dir)).filter((file) => !applied.has(file))
 
     for (const file of pending) {
-      const sql = await fs.readFile(path.join(dir, file), 'utf8')
+      const sql = await fs.readFile(path.join(/*turbopackIgnore: true*/ dir, file), 'utf8')
       try {
         await client.query('BEGIN')
         await client.query(sql)

@@ -45,7 +45,12 @@ export function sessionKey(env: NodeJS.ProcessEnv = process.env): Uint8Array {
   return createHash('sha256').update(secret).digest()
 }
 
-async function encrypt(payload: Record<string, unknown>, key: Uint8Array, lifetimeS: number, now: number) {
+async function encrypt(
+  payload: Record<string, unknown>,
+  key: Uint8Array,
+  lifetimeS: number,
+  now: number,
+) {
   const iat = Math.floor(now / 1000)
   return new EncryptJWT(payload)
     .setProtectedHeader({ alg: 'dir', enc: 'A256GCM' })

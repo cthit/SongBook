@@ -60,10 +60,7 @@ const translations = {
   DeleteSongFailed: ['Failed to delete song', 'Misslyckades ta bort sången'],
   EditSongSuccessful: ['Successfully edited song', 'Lyckades redigera sången'],
   EditSongFailed: ['Failed to edit song', 'Misslyckades redigera sången'],
-  MarkdownFormatSong: [
-    '*Markdown is used for formatting*',
-    '*Markdown används för formattering.*',
-  ],
+  MarkdownFormatSong: ['*Markdown is used for formatting*', '*Markdown används för formattering.*'],
   PreviewText: ['Preview text', 'Förhandsvisa låttext'],
   FormatSong: [
     '**Formatting of lyrics**\n\nThe lyrics uses Markdown to render. To ensure that the desired paragraph structure is achieved, make sure to understand the following syntax rules.\n\n* Double spaces at the end of a line gives a line break. Writing on a new line does not guarantee a line break.\n* A new paragraph is created by separating two lines by one or more empty lines.\n\n[Further reading on line breakes](https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet#line-breaks)',

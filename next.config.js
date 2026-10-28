@@ -6,6 +6,10 @@ const nextConfig = {
     '/**': ['./src/db/migrations/*.sql'],
   },
   serverExternalPackages: ['pg'],
+  experimental: {
+    // forbidden() / unauthorized() for the 403 and 401 pages
+    authInterrupts: true,
+  },
 }
 
 module.exports = nextConfig
