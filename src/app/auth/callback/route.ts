@@ -8,6 +8,7 @@ import {
   cookieOptions,
   decodeLoginState,
   encodeSession,
+  returnToUrl,
   sessionKey,
   type SessionUser,
 } from '@/lib/session'
@@ -34,7 +35,7 @@ export async function GET(request: NextRequest) {
 
   if (params.get('error')) {
     // e.g. the user denied the consent screen
-    return NextResponse.redirect(new URL(login?.returnTo ?? '/', config.appUrl))
+    return NextResponse.redirect(returnToUrl(login?.returnTo, config.appUrl))
   }
   const code = params.get('code')
   if (!login || !code || params.get('state') !== login.state) {
@@ -65,7 +66,7 @@ export async function GET(request: NextRequest) {
     return failure('Could not complete the sign in with gamma.', 502)
   }
 
-  const response = NextResponse.redirect(new URL(login.returnTo, config.appUrl))
+  const response = NextResponse.redirect(returnToUrl(login.returnTo, config.appUrl))
   response.cookies.delete(LOGIN_COOKIE)
   response.cookies.set(
     SESSION_COOKIE,

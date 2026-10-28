@@ -131,15 +131,34 @@ export function toPublicUser(user: SessionUser): PublicUser {
   }
 }
 
+const RETURN_TO_BASE = 'http://songbook.invalid'
+
+/** Path, query and hash of `value` resolved like a browser would, or null if it leaves the site */
+function localPath(value: string): string | null {
+  // URL parsing strips tabs/newlines and treats backslashes as slashes, reject them up front
+  if (!value.startsWith('/') || /[\x00-\x1f\x7f\\]/.test(value)) return null
+  const url = new URL(value, RETURN_TO_BASE)
+  // Dot segments (also %2e) are resolved here, e.g. `/.//evil.example` becomes `//evil.example`,
+  // which a later `new URL(path, APP_URL)` would read as a protocol relative URL
+  if (url.origin !== RETURN_TO_BASE || /^\/[/\\]/.test(url.pathname)) return null
+  return `${url.pathname}${url.search}${url.hash}`
+}
+
 /** Only allow redirects to paths on this site, never to other origins */
 export function safeReturnTo(value: string | null | undefined): string {
-  // eslint-disable-next-line no-control-regex
-  if (!value || !value.startsWith('/') || /[\u0000-\u001f\u007f\\]/.test(value)) return '/'
-  // Resolve it like the browser would; URL parsing strips tabs/newlines, so check the result
-  const base = 'http://songbook.invalid'
-  const url = new URL(value, base)
-  if (url.origin !== base) return '/'
-  return `${url.pathname}${url.search}${url.hash}`
+  const path = value ? localPath(value) : null
+  // The result must be stable, i.e. resolve to itself when it is resolved again
+  return path !== null && localPath(path) === path ? path : '/'
+}
+
+/**
+ * The absolute URL to redirect to after signing in. Checks the final destination once more right
+ * before redirecting, so a bad value (e.g. from an old login cookie) can never leave the site.
+ */
+export function returnToUrl(returnTo: string | null | undefined, appUrl: string): URL {
+  const home = new URL('/', appUrl)
+  const target = new URL(safeReturnTo(returnTo), home)
+  return target.origin === home.origin ? target : home
 }
 
 export function cookieOptions(maxAge: number, env: NodeJS.ProcessEnv = process.env) {

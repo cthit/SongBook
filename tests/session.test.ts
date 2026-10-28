@@ -5,6 +5,7 @@ import {
   decodeSession,
   encodeLoginState,
   encodeSession,
+  returnToUrl,
   safeReturnTo,
   sessionKey,
   type SessionUser,
@@ -82,5 +83,53 @@ describe('safeReturnTo', () => {
     expect(new URL(safeReturnTo('/%09/evil.example'), 'https://songbook.chalmers.it').origin).toBe(
       'https://songbook.chalmers.it',
     )
+  })
+
+  it('rejects paths that normalize to another origin', () => {
+    const external = [
+      '/.//evil.example',
+      '/a/..//evil.example',
+      '/%2e//evil.example',
+      '/%2E//evil.example',
+      '/a/%2e%2e//evil.example',
+      '/./\\evil.example',
+      '/\t\t//evil.example',
+      '/.\n//evil.example',
+      '/\r/evil.example',
+    ]
+    for (const value of external) {
+      expect(safeReturnTo(value), value).toBe('/')
+    }
+    // Harmless dot segments are resolved
+    expect(safeReturnTo('/a/../crsi')).toBe('/crsi')
+    expect(safeReturnTo('/%2e/crsi')).toBe('/crsi')
+    // An encoded slash is not a path separator, so this stays on the site
+    expect(safeReturnTo('/.%2f/evil.example')).toBe('/.%2f/evil.example')
+  })
+})
+
+describe('returnToUrl', () => {
+  const appUrl = 'https://songbook.chalmers.it'
+
+  it('resolves local paths against APP_URL', () => {
+    expect(returnToUrl('/crsi?x=1', appUrl).toString()).toBe(
+      'https://songbook.chalmers.it/crsi?x=1',
+    )
+    expect(returnToUrl(undefined, appUrl).toString()).toBe('https://songbook.chalmers.it/')
+  })
+
+  it('never leaves APP_URL, whatever the login cookie contains', () => {
+    for (const value of [
+      '//evil.example',
+      '/.//evil.example',
+      '/a/..//evil.example',
+      '/%2e//evil.example',
+      '/\\evil.example',
+      '/\t/evil.example',
+      'https://evil.example',
+      'javascript:alert(1)',
+    ]) {
+      expect(returnToUrl(value, appUrl).origin, value).toBe(appUrl)
+    }
   })
 })
