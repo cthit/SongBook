@@ -2,9 +2,9 @@ import { createRemoteJWKSet, jwtVerify, type JWTPayload } from 'jose'
 
 export interface GammaConfig {
   appUrl: string
-  /** Public gamma URL, used for browser redirects */
+  /** Public gamma URL, used for browser redirects and links */
   gammaUrl: string
-  /** URL used for server to server calls, e.g. a docker network hostname */
+  /** URL used for server to server calls, e.g. a docker network hostname. Defaults to gammaUrl. */
   internalUrl: string
   clientId: string
   clientSecret: string
@@ -40,16 +40,33 @@ export interface Discovery {
   jwks_uri: string
 }
 
-/** Rewrites a public gamma URL to the internal URL for server to server requests */
+/** `url` with its origin replaced by `to`'s if it is on `from`'s origin, otherwise unchanged */
+function replaceOrigin(url: string, from: string, to: string): string {
+  const target = new URL(url)
+  if (target.origin !== new URL(from).origin) return url
+  // Not via the host setter: setting a host without a port keeps the old port
+  return new URL(`${target.pathname}${target.search}${target.hash}`, new URL(to).origin).toString()
+}
+
+/*
+ * Gamma 2.5.3 has no fixed issuer: Spring Authorization Server derives the issuer and every URL in
+ * the discovery document from the Host of the request. Discovery fetched through GAMMA_INTERNAL_URL
+ * (e.g. http://gamma:8081) therefore describes gamma at the internal URL, and the ID token from a
+ * token request to the internal URL carries that internal issuer. The server keeps talking to the
+ * internal URL and verifies `iss` against the internally fetched issuer; only URLs that the
+ * browser opens are rewritten to the public GAMMA_URL.
+ */
+
+/** Rewrites a public gamma URL to the internal URL, for server to server requests */
 export function toInternalUrl(url: string, config: GammaConfig): string {
   if (config.internalUrl === config.gammaUrl) return url
-  const target = new URL(url)
-  const publicBase = new URL(config.gammaUrl)
-  if (target.origin !== publicBase.origin) return url
-  const internalBase = new URL(config.internalUrl)
-  target.protocol = internalBase.protocol
-  target.host = internalBase.host
-  return target.toString()
+  return replaceOrigin(url, config.gammaUrl, config.internalUrl)
+}
+
+/** Rewrites an internal gamma URL (e.g. from discovery) to the public URL, for the browser */
+export function toPublicUrl(url: string, config: GammaConfig): string {
+  if (config.internalUrl === config.gammaUrl) return url
+  return replaceOrigin(url, config.internalUrl, config.gammaUrl)
 }
 
 const DISCOVERY_TTL_MS = 60 * 60 * 1000
@@ -81,7 +98,8 @@ export function buildAuthorizeUrl(
   discovery: Discovery,
   params: { state: string; nonce: string; codeChallenge: string },
 ): string {
-  const url = new URL(discovery.authorization_endpoint)
+  // The browser can't reach the internal URL that discovery was fetched through
+  const url = new URL(toPublicUrl(discovery.authorization_endpoint, config))
   url.search = new URLSearchParams({
     response_type: 'code',
     client_id: config.clientId,
@@ -153,7 +171,11 @@ function jwks(config: GammaConfig, discovery: Discovery) {
   return cache.gammaJwks.jwks
 }
 
-/** Verifies signature, issuer, audience, expiry and nonce of a gamma ID token */
+/**
+ * Verifies signature, issuer, audience, expiry and nonce of a gamma ID token. The token was minted
+ * by the token request to the internal URL, so its `iss` is the issuer of the internally fetched
+ * discovery document.
+ */
 export async function verifyIdToken(
   config: GammaConfig,
   discovery: Discovery,

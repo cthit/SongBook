@@ -1,5 +1,5 @@
 # Quick start:        docker compose up songbook-db           (database for `pnpm dev`)
-# Everything local:   docker compose --profile gamma up --build
+# Everything local:   docker compose --profile gamma up --build   (with a .env, see README.md)
 # See README.md for how to create the gamma client, API key and authority.
 
 services:
@@ -16,9 +16,10 @@ services:
       SONGBOOK_POSTGRES_USER: songbook
       SONGBOOK_POSTGRES_PASSWORD: password
       SONGBOOK_POSTGRES_DB: postgres
-      # Defaults point at the gamma from the `gamma` profile below
-      GAMMA_URL: ${GAMMA_URL:-http://localhost:8081}
-      GAMMA_INTERNAL_URL: ${GAMMA_INTERNAL_URL:-http://gamma:8081}
+      # For the gamma from the `gamma` profile below set GAMMA_URL=http://localhost:8081 and
+      # GAMMA_INTERNAL_URL=http://gamma:8081 in .env (see README.md, "Local gamma")
+      GAMMA_URL: ${GAMMA_URL:-https://gamma.chalmers.it}
+      GAMMA_INTERNAL_URL: ${GAMMA_INTERNAL_URL:-}
       GAMMA_CLIENT_ID: ${GAMMA_CLIENT_ID:-}
       GAMMA_CLIENT_SECRET: ${GAMMA_CLIENT_SECRET:-}
       GAMMA_API_KEY_ID: ${GAMMA_API_KEY_ID:-}

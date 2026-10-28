@@ -1,6 +1,13 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { isAdminFromAuthorities } from '@/lib/auth'
-import { discover, exchangeCode, fetchAuthorities, gammaConfig, verifyIdToken } from '@/lib/gamma'
+import {
+  discover,
+  exchangeCode,
+  fetchAuthorities,
+  gammaConfig,
+  toPublicUrl,
+  verifyIdToken,
+} from '@/lib/gamma'
 import {
   LOGIN_COOKIE,
   SESSION_COOKIE,
@@ -55,7 +62,7 @@ export async function GET(request: NextRequest) {
       nickname: claims.nickname ?? claims.cid,
       name: claims.name ?? claims.cid,
       locale: claims.locale === 'sv' ? 'sv' : 'en',
-      picture: claims.picture ?? null,
+      picture: claims.picture ? toPublicUrl(claims.picture, config) : null,
       isAdmin: isAdminFromAuthorities(authorities, config.adminAuthority),
       authorities,
       issuedAt: now,

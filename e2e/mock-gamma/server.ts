@@ -3,10 +3,16 @@
  * contract the songbook uses: OIDC discovery, authorization code flow with PKCE, RS256 ID tokens
  * with gamma's claims, JWKS, userinfo and the client API's authorities endpoint.
  *
+ * Like gamma 2.5.3 (Spring Authorization Server without a fixed issuer) the issuer and every URL in
+ * the discovery document are derived from the Host header of the request, so the mock answers to
+ * different hostnames (e.g. localhost for the browser and 127.0.0.1 for the app) with different
+ * issuers. Only the `picture` claim uses a fixed base URL, like gamma's BASE_URL.
+ *
  * Run standalone with `pnpm tsx e2e/mock-gamma/main.ts`.
  */
 import { createHash, randomBytes, randomUUID } from 'crypto'
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'http'
+import type { AddressInfo } from 'net'
 import { exportJWK, generateKeyPair, SignJWT, type JWK } from 'jose'
 
 export interface MockUser {
@@ -41,7 +47,10 @@ export const MOCK_USERS: Record<'admin' | 'member', MockUser> = {
 }
 
 export interface MockGammaOptions {
+  /** 0 picks a free port */
   port: number
+  /** gamma's BASE_URL, used for the picture claim. Defaults to http://localhost:{port} */
+  baseUrl?: string
   clientId: string
   clientSecret: string
   redirectUri: string
@@ -86,7 +95,8 @@ function send(
 export async function startMockGamma(
   options: MockGammaOptions,
 ): Promise<{ url: string; close: () => Promise<void> }> {
-  const issuer = `http://localhost:${options.port}`
+  // Set once the server is listening, when the port is known
+  let baseUrl = options.baseUrl ?? ''
   const { privateKey, publicKey } = await generateKeyPair('RS256')
   const kid = randomUUID()
   const jwk: JWK = { ...(await exportJWK(publicKey)), kid, use: 'sig', alg: 'RS256' }
@@ -104,11 +114,12 @@ export async function startMockGamma(
     family_name: user.lastName,
     nickname: user.nick,
     locale: user.locale,
-    picture: `${issuer}/images/user/avatar/${user.sub}`,
+    picture: `${baseUrl}/images/user/avatar/${user.sub}`,
     cid: user.cid,
   })
 
   const handle = async (request: IncomingMessage, response: ServerResponse) => {
+    const issuer = `http://${request.headers.host ?? new URL(baseUrl).host}`
     const url = new URL(request.url ?? '/', issuer)
 
     if (request.method === 'GET' && url.pathname === '/.well-known/openid-configuration') {
@@ -289,9 +300,10 @@ export async function startMockGamma(
     server.once('error', reject)
     server.listen(options.port, resolve)
   })
+  baseUrl ||= `http://localhost:${(server.address() as AddressInfo).port}`
 
   return {
-    url: issuer,
+    url: baseUrl,
     close: () =>
       new Promise<void>((resolve) => {
         server.closeAllConnections()

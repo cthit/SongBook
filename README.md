@@ -38,25 +38,25 @@ used by the tests: `pnpm tsx e2e/mock-gamma/main.ts` (listens on port 8092; set
 
 ## Environment variables
 
-| Variable                     | Default                     | Description                                                                                                                                          |
-| ---------------------------- | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `APP_URL`                    | `http://localhost:3000`     | Public base URL of the songbook. Cookies are `Secure` when it is `https://`.                                                                         |
-| `SESSION_SECRET`             | dev only fallback           | Key for the encrypted session cookie. **Required in production**, at least 32 characters (`openssl rand -base64 48`).                                |
-| `SONGBOOK_POSTGRES_HOST`     | `localhost`                 | Same variables as the old Python backend, so the existing database can be used as is.                                                                |
-| `SONGBOOK_POSTGRES_PORT`     | `5432`                      |                                                                                                                                                      |
-| `SONGBOOK_POSTGRES_USER`     | `songbook`                  |                                                                                                                                                      |
-| `SONGBOOK_POSTGRES_PASSWORD` | `password`                  |                                                                                                                                                      |
-| `SONGBOOK_POSTGRES_DB`       | `postgres`                  |                                                                                                                                                      |
-| `DATABASE_URL`               |                             | Alternative to the variables above, wins if set.                                                                                                     |
-| `GAMMA_URL`                  | `https://gamma.chalmers.it` | Public gamma URL, users are redirected here to sign in.                                                                                              |
-| `GAMMA_INTERNAL_URL`         | `GAMMA_URL`                 | URL the server uses to talk to gamma (discovery, token, JWKS, client API), e.g. `http://gamma:8081` in docker compose. The issuer is still verified. |
-| `GAMMA_CLIENT_ID`            |                             | Client id of the songbook client in gamma.                                                                                                           |
-| `GAMMA_CLIENT_SECRET`        |                             | Client secret.                                                                                                                                       |
-| `GAMMA_API_KEY_ID`           |                             | Id of the client's API key, used to read the user's authorities.                                                                                     |
-| `GAMMA_API_KEY_TOKEN`        |                             | Token of the client's API key.                                                                                                                       |
-| `GAMMA_REDIRECT_URI`         | `${APP_URL}/auth/callback`  | Must match the redirect URL of the client in gamma.                                                                                                  |
-| `GAMMA_ADMIN_AUTHORITY`      | `songbook`                  | Client authority that makes a user an admin.                                                                                                         |
-| `PORT`                       | `3000`                      | HTTP port.                                                                                                                                           |
+| Variable                     | Default                     | Description                                                                                                                                             |
+| ---------------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `APP_URL`                    | `http://localhost:3000`     | Public base URL of the songbook. Cookies are `Secure` when it is `https://`.                                                                            |
+| `SESSION_SECRET`             | dev only fallback           | Key for the encrypted session cookie. **Required in production**, at least 32 characters (`openssl rand -base64 48`).                                   |
+| `SONGBOOK_POSTGRES_HOST`     | `localhost`                 | Same variables as the old Python backend, so the existing database can be used as is.                                                                   |
+| `SONGBOOK_POSTGRES_PORT`     | `5432`                      |                                                                                                                                                         |
+| `SONGBOOK_POSTGRES_USER`     | `songbook`                  |                                                                                                                                                         |
+| `SONGBOOK_POSTGRES_PASSWORD` | `password`                  |                                                                                                                                                         |
+| `SONGBOOK_POSTGRES_DB`       | `postgres`                  |                                                                                                                                                         |
+| `DATABASE_URL`               |                             | Alternative to the variables above, wins if set.                                                                                                        |
+| `GAMMA_URL`                  | `https://gamma.chalmers.it` | Public gamma URL, users are redirected here to sign in.                                                                                                 |
+| `GAMMA_INTERNAL_URL`         | `GAMMA_URL`                 | URL the server uses to talk to gamma (discovery, token, JWKS, client API), e.g. `http://gamma:8081` in docker compose. See [Local gamma](#local-gamma). |
+| `GAMMA_CLIENT_ID`            |                             | Client id of the songbook client in gamma.                                                                                                              |
+| `GAMMA_CLIENT_SECRET`        |                             | Client secret.                                                                                                                                          |
+| `GAMMA_API_KEY_ID`           |                             | Id of the client's API key, used to read the user's authorities.                                                                                        |
+| `GAMMA_API_KEY_TOKEN`        |                             | Token of the client's API key.                                                                                                                          |
+| `GAMMA_REDIRECT_URI`         | `${APP_URL}/auth/callback`  | Must match the redirect URL of the client in gamma.                                                                                                     |
+| `GAMMA_ADMIN_AUTHORITY`      | `songbook`                  | Client authority that makes a user an admin.                                                                                                            |
+| `PORT`                       | `3000`                      | HTTP port.                                                                                                                                              |
 
 ## Gamma
 
@@ -84,9 +84,22 @@ can be cleared at go-live; the songbook's PostgreSQL must not be.
 own PostgreSQL, Redis and a mocked gotify) on http://localhost:8081. Gamma prints the generated admin
 password in its log (`docker compose logs gamma`). It runs with mock data (`IS_MOCKING=true`); the mock
 users log in with the password `password1337`. Create the client, API key and authority as described
-above and put them in a `.env` file next to `docker-compose.yml` (`GAMMA_CLIENT_ID=...` etc.), then
-restart the `songbook` service. The songbook talks to gamma over the compose network
-(`GAMMA_INTERNAL_URL=http://gamma:8081`) while your browser uses `http://localhost:8081`.
+above with the redirect url `http://localhost:3000/auth/callback`, then create a `.env` file next to
+`docker-compose.yml` and restart the `songbook` service (`docker compose --profile gamma up -d`):
+
+```sh
+GAMMA_URL=http://localhost:8081           # what your browser uses
+GAMMA_INTERNAL_URL=http://gamma:8081      # what the songbook container uses
+GAMMA_CLIENT_ID=...
+GAMMA_CLIENT_SECRET=...
+GAMMA_API_KEY_ID=...
+GAMMA_API_KEY_TOKEN=...
+```
+
+Gamma 2.5.3 has no fixed issuer: it derives the issuer and all URLs in its discovery document from the
+`Host` of the request. The songbook fetches discovery, tokens, keys and authorities through
+`GAMMA_INTERNAL_URL`, so the ID token's issuer is `http://gamma:8081`, which is what it is verified
+against. Only the sign in redirect (and the "View account" link) go to `GAMMA_URL`.
 
 ## Database
 

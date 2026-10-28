@@ -1,10 +1,12 @@
 import { expect, type Page } from '@playwright/test'
-import { APP_URL } from './env'
+import { APP_URL, GAMMA_URL } from './env'
 
 /** Signs in through the (mock) gamma consent page, starting from the current page */
 export async function signIn(page: Page, user: 'admin' | 'member') {
   await page.getByRole('link', { name: 'Sign in' }).click()
   await expect(page.getByRole('heading', { name: 'Mock gamma sign in' })).toBeVisible()
+  // The app fetched discovery through GAMMA_INTERNAL_URL, the browser must still use GAMMA_URL
+  expect(new URL(page.url()).origin).toBe(GAMMA_URL)
   await page.getByRole('radio', { name: new RegExp(`^${user} `) }).check()
   await page.getByRole('button', { name: 'Authorize' }).click()
   await page.waitForURL((url) => url.origin === APP_URL && !url.pathname.startsWith('/auth'))
