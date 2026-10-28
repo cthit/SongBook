@@ -66,14 +66,22 @@ scopes `openid profile`) and reads which authorities the user has through gamma'
 with the `GAMMA_ADMIN_AUTHORITY` authority is an admin. Authorities are checked again at most every five
 minutes, so removing someone in gamma takes effect quickly. Sessions last 12 hours.
 
-Setting up the client in gamma (as a gamma admin):
+Setting up the client in gamma 2.5.3 (as a gamma admin):
 
-1. Create an **official client** under _Clients_ with the redirect URL `${APP_URL}/auth/callback`
-   (`https://songbook.chalmers.it/auth/callback` in production). The email scope is not needed. Note the
-   client id and secret: `GAMMA_CLIENT_ID` / `GAMMA_CLIENT_SECRET`.
-2. On the client's page, generate an **API key** for it: `GAMMA_API_KEY_ID` / `GAMMA_API_KEY_TOKEN`.
-3. Add a **client authority** named `songbook` and attach the super groups and/or users that may edit
-   the songbook (e.g. the culture committee).
+1. Open _Clients_ (`/clients`) and choose **Create client** (`/clients/create`, official clients can
+   only be created by admins). Fill in the pretty name and descriptions, set the redirect url to
+   `${APP_URL}/auth/callback` (`https://songbook.chalmers.it/auth/callback` in production) and tick
+   **Generate api key**; the API key can only be created together with the client. The email scope
+   is not needed.
+2. Gamma now shows the credentials **once** ("They will not be shown again"): the client secret is
+   `GAMMA_CLIENT_SECRET` and the api key is `GAMMA_API_KEY_TOKEN`. The header shown below them,
+   `Authorization: pre-shared <id>:<token>`, contains the api key id, `GAMMA_API_KEY_ID`. The
+   _Client id_ on the client details page is `GAMMA_CLIENT_ID`. If a secret is lost, use **Reset
+   client secret** on the client page, or **More details** → **Reset token** for the api key (the
+   api key id is also the last part of that page's URL, `/api-keys/<id>`).
+3. Under **Create client authority** on the same page, enter the authority name `songbook`, add the
+   super groups that may edit the songbook with **Add super group authority** (e.g. the culture
+   committee) and/or single users with **Add user authority**, and save.
 
 The old songbook used gamma's removed v1 login, so nothing from it carries over to gamma. Gamma's Redis
 can be cleared at go-live; the songbook's PostgreSQL must not be.
