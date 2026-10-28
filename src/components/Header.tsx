@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { useLanguage, useUser } from '@/components/Providers'
 import { Chip, buttonClass } from '@/components/ui'
 
@@ -21,9 +21,17 @@ function LanguageToggle() {
   )
 }
 
+const subscribeNothing = () => () => {}
+
 function Avatar({ picture, nickname }: { picture: string | null; nickname: string }) {
   const [failed, setFailed] = useState(false)
-  if (!picture || failed) {
+  // Only render the image in the browser, so onError is attached before it can fail
+  const isClient = useSyncExternalStore(
+    subscribeNothing,
+    () => true,
+    () => false,
+  )
+  if (!picture || failed || !isClient) {
     return (
       <span className="flex h-8 w-8 items-center justify-center rounded-full bg-turquoise-700 text-sm font-semibold text-white">
         {nickname.slice(0, 1).toUpperCase()}

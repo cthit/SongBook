@@ -189,3 +189,12 @@ export function tagLabel(
 ): string {
   return (language === 'sv' ? tag.pretty_name_sv : tag.pretty_name_en) || tag.name
 }
+
+/** Same output on the server and in the browser, so it can be server rendered */
+export function formatDate(iso: string, language: Language): string {
+  return new Intl.DateTimeFormat(language === 'sv' ? 'sv-SE' : 'en-GB', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+    timeZone: 'Europe/Stockholm',
+  }).format(new Date(iso))
+}

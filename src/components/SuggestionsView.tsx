@@ -15,7 +15,7 @@ import {
   inputClass,
 } from '@/components/ui'
 import { diffLines } from '@/lib/diff'
-import { errorMessage, tagLabel, type Language, type Texts } from '@/lib/i18n'
+import { errorMessage, formatDate, tagLabel, type Language, type Texts } from '@/lib/i18n'
 import type { Song, Suggestion, Tag } from '@/lib/types'
 
 function tagNames(ids: string[], tagsById: Map<string, Tag>, language: Language) {
@@ -170,7 +170,7 @@ export function SuggestionsView({
   tags: Tag[]
   isAdmin: boolean
 }) {
-  const { texts } = useLanguage()
+  const { texts, language } = useLanguage()
   const showToast = useToast()
   const router = useRouter()
   const [comments, setComments] = useState<Record<string, string>>({})
@@ -238,7 +238,7 @@ export function SuggestionsView({
               />
               <p className="text-xs text-gray-500">
                 {texts.SuggestedBy} {suggestion.suggested_by_name} ({suggestion.suggested_by_cid}) ·{' '}
-                {new Date(suggestion.created_at).toLocaleString()}
+                {formatDate(suggestion.created_at, language)}
               </p>
               <SuggestionPreview
                 suggestion={suggestion}
@@ -293,9 +293,7 @@ export function SuggestionsView({
                 {texts[`Status_${suggestion.status}`]}
               </Chip>
             </div>
-            <p className="text-xs text-gray-500">
-              {new Date(suggestion.created_at).toLocaleString()}
-            </p>
+            <p className="text-xs text-gray-500">{formatDate(suggestion.created_at, language)}</p>
             {suggestion.review_comment && (
               <p className="text-sm italic text-gray-700">“{suggestion.review_comment}”</p>
             )}
