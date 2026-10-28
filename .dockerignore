@@ -1,5 +1,6 @@
 Dockerfile
 .dockerignore
+docker-compose.yml
 node_modules
 npm-debug.log
 README.md
@@ -7,7 +8,11 @@ README.md
 .git
 .github
 .env*
+# Tests are not part of the image (and would be type checked by next build)
 e2e
+tests
+playwright.config.ts
+vitest.config.mts
 test-results
 playwright-report
 coverage

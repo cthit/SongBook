@@ -9,7 +9,7 @@ export default defineConfig({
   },
   test: {
     // Integration tests start a Postgres container, run them with `pnpm test:integration`
-    include: integration ? ['tests/integration/**/*.test.ts'] : ['tests/*.test.ts'],
+    include: integration ? ['tests/integration/**/*.test.ts'] : ['tests/*.test.{ts,tsx}'],
     environment: 'node',
     testTimeout: integration ? 120_000 : 5_000,
     hookTimeout: integration ? 120_000 : 10_000,

@@ -1,0 +1,88 @@
+# Quick start:        docker compose up songbook-db           (database for `pnpm dev`)
+# Everything local:   docker compose --profile gamma up --build
+# See README.md for how to create the gamma client, API key and authority.
+
+services:
+  songbook:
+    build: .
+    restart: unless-stopped
+    ports:
+      - '3000:3000'
+    environment:
+      APP_URL: ${APP_URL:-http://localhost:3000}
+      SESSION_SECRET: ${SESSION_SECRET:-change-me-to-a-long-random-string-0123456789}
+      SONGBOOK_POSTGRES_HOST: songbook-db
+      SONGBOOK_POSTGRES_PORT: 5432
+      SONGBOOK_POSTGRES_USER: songbook
+      SONGBOOK_POSTGRES_PASSWORD: password
+      SONGBOOK_POSTGRES_DB: postgres
+      # Defaults point at the gamma from the `gamma` profile below
+      GAMMA_URL: ${GAMMA_URL:-http://localhost:8081}
+      GAMMA_INTERNAL_URL: ${GAMMA_INTERNAL_URL:-http://gamma:8081}
+      GAMMA_CLIENT_ID: ${GAMMA_CLIENT_ID:-}
+      GAMMA_CLIENT_SECRET: ${GAMMA_CLIENT_SECRET:-}
+      GAMMA_API_KEY_ID: ${GAMMA_API_KEY_ID:-}
+      GAMMA_API_KEY_TOKEN: ${GAMMA_API_KEY_TOKEN:-}
+      GAMMA_ADMIN_AUTHORITY: ${GAMMA_ADMIN_AUTHORITY:-songbook}
+    depends_on:
+      - songbook-db
+
+  songbook-db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: songbook
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: postgres
+    ports:
+      - '5432:5432'
+    volumes:
+      - songbook_db:/var/lib/postgresql/data
+
+  # Optional local gamma: docker compose --profile gamma up
+  gamma:
+    image: ghcr.io/cthit/gamma:2.5.3
+    profiles: [gamma]
+    environment:
+      BASE_URL: http://localhost:8081
+      DB_HOST: gamma-db
+      DB_PORT: 5432
+      DB_NAME: postgres
+      DB_USER: gamma
+      DB_PASSWORD: password
+      REDIS_HOST: gamma-redis
+      REDIS_PORT: 6379
+      PRODUCTION: 'false'
+      IS_MOCKING: 'true'
+      ADMIN_SETUP: 'true'
+      GOTIFY_KEY: 123abc
+      GOTIFY_BASE_URL: http://gamma-gotify:80
+    ports:
+      - '8081:8081'
+    depends_on:
+      - gamma-db
+      - gamma-redis
+      - gamma-gotify
+
+  gamma-db:
+    image: postgres:16
+    profiles: [gamma]
+    environment:
+      POSTGRES_USER: gamma
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: postgres
+
+  gamma-redis:
+    image: redis:7
+    profiles: [gamma]
+
+  gamma-gotify:
+    image: cthit/gotify:latest
+    profiles: [gamma]
+    environment:
+      GOTIFY_PRE-SHARED-KEY: 123abc
+      GOTIFY_MOCK-MODE: 'true'
+      GOTIFY_PORT: 80
+
+volumes:
+  songbook_db:
