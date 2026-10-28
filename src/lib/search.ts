@@ -7,8 +7,8 @@ export const SEARCH_THRESHOLD = 0.35
 
 /**
  * Same behaviour as the old filter worker: tags are OR-ed and applied first, then a fuzzy search
- * over number, title, melody, author and lyrics. Results keep fuzzysort's ranking when searching,
- * otherwise songs are sorted by number.
+ * over number, title, melody, author and lyrics. With a search text the results keep fuzzysort's
+ * relevance ranking (like the old app); with only tags, or nothing, songs are sorted by number.
  */
 export function filterSongs(songs: Song[], filterText: string, filterTags: string[]): Song[] {
   let result = [...songs].sort((a, b) => a.number - b.number)
