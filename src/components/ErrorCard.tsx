@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { useTexts } from '@/components/Providers'
 import { buttonClass, cardClass } from '@/components/ui'
 import type { TranslationKey } from '@/lib/i18n'
@@ -20,6 +21,7 @@ export function ErrorCard({
   onRetry?: () => void
 }) {
   const texts = useTexts()
+  const pathname = usePathname()
   const variant = VARIANTS[status]
   return (
     <div
@@ -32,7 +34,16 @@ export function ErrorCard({
       <p className="px-4 py-3 text-sm text-gray-700">{texts[variant.body]}</p>
       <div className="flex justify-end gap-2 px-4 pb-4">
         {status === 401 && (
-          <a href="/auth/login" className={buttonClass('primary')}>
+          <a
+            href={`/auth/login?returnTo=${encodeURIComponent(pathname)}`}
+            // Keep the query too (e.g. /suggestions/new?song=...), not available while rendering
+            onClick={(event) => {
+              const { pathname: path, search } = window.location
+              event.currentTarget.href = `/auth/login?returnTo=${encodeURIComponent(path + search)}`
+            }}
+            className={buttonClass('primary')}
+            data-testid="error-sign-in"
+          >
             {texts.SignInWithGamma}
           </a>
         )}
