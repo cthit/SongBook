@@ -1,0 +1,7 @@
+allowBuilds:
+  esbuild: false
+  sharp: false
+  unrs-resolver: false
+  cpu-features: false
+  ssh2: false
+  protobufjs: false

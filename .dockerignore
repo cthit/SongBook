@@ -1,0 +1,13 @@
+Dockerfile
+.dockerignore
+node_modules
+npm-debug.log
+README.md
+.next
+.git
+.github
+.env*
+e2e
+test-results
+playwright-report
+coverage
