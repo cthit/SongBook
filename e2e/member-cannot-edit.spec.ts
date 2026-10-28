@@ -67,6 +67,13 @@ test('visitors and members can read and suggest, but not edit', async ({ page })
   await page.goto('/tags')
   await expect(page.getByRole('heading', { name: '403 - Insufficient access' })).toBeVisible()
   expect((await page.request.put(`/api/songs/${songId}`, { data: edit })).status()).toBe(403)
+  // Requests from other (even same-site) origins are rejected before anything else
+  const crossOrigin = await page.request.post('/api/suggestions', {
+    data: { ...edit, kind: 'new', title: 'CSRF' },
+    headers: { Origin: 'https://evil.chalmers.it' },
+  })
+  expect(crossOrigin.status()).toBe(403)
+  expect((await crossOrigin.json()).error.message).toBe('CROSS_ORIGIN_REQUEST')
   expect((await page.request.delete('/api/tags/abcd')).status()).toBe(403)
   const unchanged = await (await page.request.get(`/api/songs/${songId}`)).json()
   expect(unchanged.data.song.text).not.toBe('Ändrad text')

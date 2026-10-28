@@ -26,12 +26,32 @@ export const jsonError = (message: string, status: number) =>
     { status },
   )
 
+const isSafeMethod = (method: string) => method === 'GET' || method === 'HEAD'
+
+/**
+ * CSRF protection for mutating requests. SameSite=Lax stops other sites, but not other
+ * *.chalmers.it origins, so browsers' Origin / Sec-Fetch-Site headers must point at us.
+ * Requests without them (curl and friends) carry no browser cookies, so they are let through.
+ */
+export function assertSameOrigin(request: NextRequest, appUrl = process.env.APP_URL) {
+  const fetchSite = request.headers.get('sec-fetch-site')
+  if (fetchSite && fetchSite !== 'same-origin' && fetchSite !== 'none') {
+    throw new ApiError(403, 'CROSS_ORIGIN_REQUEST')
+  }
+  const origin = request.headers.get('origin')
+  if (!origin) return
+  const allowed = new Set([request.nextUrl.origin])
+  if (appUrl) allowed.add(new URL(appUrl).origin)
+  if (!allowed.has(origin)) throw new ApiError(403, 'CROSS_ORIGIN_REQUEST')
+}
+
 export function withHandler<Context = unknown>(
   label: string,
   handler: (request: NextRequest, context: Context) => Promise<Response>,
 ) {
   return async (request: NextRequest, context: Context): Promise<Response> => {
     try {
+      if (!isSafeMethod(request.method)) assertSameOrigin(request)
       return await handler(request, context)
     } catch (error) {
       if (error instanceof ApiError) {
@@ -44,6 +64,10 @@ export function withHandler<Context = unknown>(
 }
 
 export async function readJsonObject(request: Request): Promise<Record<string, unknown>> {
+  // Forces a CORS preflight for cross-origin browser requests
+  if (!request.headers.get('content-type')?.toLowerCase().startsWith('application/json')) {
+    throw new ApiError(415, 'EXPECTED_JSON')
+  }
   let body: unknown
   try {
     body = await request.json()

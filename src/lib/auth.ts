@@ -62,25 +62,32 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   return decodeSession(store.get(SESSION_COOKIE)?.value, sessionKey())
 }
 
-async function refreshed(user: SessionUser): Promise<SessionUser> {
+async function refreshed(user: SessionUser, useCache: boolean): Promise<SessionUser> {
   return refreshAuthorities(user, {
     adminAuthority: gammaConfig().adminAuthority,
-    fetch: cachedFetchAuthorities,
+    fetch: useCache ? cachedFetchAuthorities : uncachedFetchAuthorities,
   })
 }
 
+/** Always asks gamma (and updates the cache), used before mutations */
+async function uncachedFetchAuthorities(sub: string): Promise<string[]> {
+  const authorities = await fetchAuthorities(gammaConfig(), sub)
+  ;(authorityCache.songbookAuthorities ??= new Map()).set(sub, { authorities, at: Date.now() })
+  return authorities
+}
+
 /**
- * The signed in user for rendering pages. Authorities are refreshed when stale, if gamma is
- * unreachable the session's value is used (rendering only, mutations always re-check).
+ * The signed in user for rendering pages. Authorities are refreshed when stale; if gamma is
+ * unreachable the user is treated as a non-admin until it is back (mutations answer 503).
  */
 export async function getCurrentUser(): Promise<SessionUser | null> {
   const user = await getSessionUser()
   if (!user) return null
   try {
-    return await refreshed(user)
+    return await refreshed(user, true)
   } catch (error) {
     console.error('Could not refresh authorities from gamma:', error)
-    return user
+    return { ...user, isAdmin: false }
   }
 }
 
@@ -102,7 +109,7 @@ async function refreshAndPersist(user: SessionUser): Promise<SessionUser> {
   if (!needsAuthorityRefresh(user)) return user
   let fresh: SessionUser
   try {
-    fresh = await refreshed(user)
+    fresh = await refreshed(user, false)
   } catch (error) {
     console.error('Could not refresh authorities from gamma:', error)
     throw new ApiError(503, 'GAMMA_UNAVAILABLE')

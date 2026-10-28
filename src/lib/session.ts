@@ -133,10 +133,13 @@ export function toPublicUser(user: SessionUser): PublicUser {
 
 /** Only allow redirects to paths on this site, never to other origins */
 export function safeReturnTo(value: string | null | undefined): string {
-  if (!value || !value.startsWith('/') || value.startsWith('//') || value.startsWith('/\\')) {
-    return '/'
-  }
-  return value
+  // eslint-disable-next-line no-control-regex
+  if (!value || !value.startsWith('/') || /[\u0000-\u001f\u007f\\]/.test(value)) return '/'
+  // Resolve it like the browser would; URL parsing strips tabs/newlines, so check the result
+  const base = 'http://songbook.invalid'
+  const url = new URL(value, base)
+  if (url.origin !== base) return '/'
+  return `${url.pathname}${url.search}${url.hash}`
 }
 
 export function cookieOptions(maxAge: number, env: NodeJS.ProcessEnv = process.env) {

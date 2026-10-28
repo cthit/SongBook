@@ -186,5 +186,8 @@ export async function fetchAuthorities(config: GammaConfig, userId: string): Pro
   if (!response.ok) throw new Error(`Gamma authorities request failed with ${response.status}`)
   const body: unknown = await response.json()
   if (!Array.isArray(body)) throw new Error('Unexpected authorities response from gamma')
-  return body.filter((authority): authority is string => typeof authority === 'string')
+  if (!body.every((authority) => typeof authority === 'string')) {
+    throw new Error('Unexpected authorities response from gamma, expected a list of names')
+  }
+  return body as string[]
 }

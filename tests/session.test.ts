@@ -75,5 +75,12 @@ describe('safeReturnTo', () => {
     expect(safeReturnTo('//evil.example')).toBe('/')
     expect(safeReturnTo('/\\evil.example')).toBe('/')
     expect(safeReturnTo(null)).toBe('/')
+    // URL parsing strips tabs and newlines, which would turn these into //evil.example
+    expect(safeReturnTo('/\t/evil.example')).toBe('/')
+    expect(safeReturnTo('/\n/evil.example')).toBe('/')
+    expect(safeReturnTo('/%09/evil.example')).toBe('/%09/evil.example')
+    expect(new URL(safeReturnTo('/%09/evil.example'), 'https://songbook.chalmers.it').origin).toBe(
+      'https://songbook.chalmers.it',
+    )
   })
 })
