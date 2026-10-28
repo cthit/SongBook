@@ -18,8 +18,15 @@ const CATEGORY_HEADING = /[^\n]+\n=+/g
 const CATEGORY_SPLIT = /\n=+\n/
 const SONG_HEADING = /[^\n]+\n-+\n/g
 const SONG_SPLIT = /\n-+\n/
-const MELODY = /\n\*?[mM][eE][lL]:([^\n*]+)/
-const AUTHOR = /\n\*?[tT][eE][xX][tT]: ([^\n*]+)/
+// A value ends at the end of the line or at an unescaped `*`, which closes `*Mel: ...*`. The export
+// writes `*` in values as `\*` (and `\` as `\\`) so that they survive a re-import.
+const VALUE = String.raw`((?:\\[\\*]|[^\n*])+)`
+const MELODY = new RegExp(String.raw`\n\*?[mM][eE][lL]:${VALUE}`)
+const AUTHOR = new RegExp(String.raw`\n\*?[tT][eE][xX][tT]: ${VALUE}`)
+
+/** Escapes a `Mel:` / `Text:` value for the line the seed parser reads */
+export const escapeFieldValue = (value: string) => value.replace(/[\\*]/g, '\\$&')
+export const unescapeFieldValue = (value: string) => value.replace(/\\([\\*])/g, '$1')
 
 const startsOf = (input: string, pattern: RegExp) =>
   [...input.matchAll(pattern)].map((match) => match.index)
@@ -43,8 +50,8 @@ export function parseSong(chunk: string): ParsedSong | null {
   const body = `\n${rest}`
   return {
     title: title.trim(),
-    melody: MELODY.exec(body)?.[1].trim() ?? '',
-    author: AUTHOR.exec(body)?.[1].trim() || 'Unknown',
+    melody: unescapeFieldValue(MELODY.exec(body)?.[1] ?? '').trim(),
+    author: unescapeFieldValue(AUTHOR.exec(body)?.[1] ?? '').trim() || 'Unknown',
     text: rest.trim(),
   }
 }

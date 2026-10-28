@@ -146,6 +146,34 @@ describe('songbookToMarkdown', () => {
     )
   })
 
+  it('round trips melodies and authors containing asterisks and backslashes', () => {
+    const song = (melody: string, author: string, text = 'La la la'): Song => ({
+      song_id: `s-${melody}`,
+      number: 1,
+      title: 'VISA',
+      author,
+      melody,
+      text,
+      tags: ['tttt'],
+      hidden: false,
+    })
+    const values: [string, string][] = [
+      ['C*D', 'A*B'],
+      ['*emphasised*', '*emphasised*'],
+      ['**', 'A\\*B\\'],
+    ]
+    for (const [melody, author] of values) {
+      // Both as new lines and replacing a `Mel:` / `Text:` line that is already in the lyrics
+      for (const text of ['La la la', '*Mel: Vikingen*\n\nLa la la\n\n*Text: Någon*']) {
+        const [reparsed] = roundTrip([song(melody, author, text)])
+        expect(reparsed, `${melody} ${text}`).toMatchObject({ melody, author })
+        // And again, i.e. exporting what an earlier export + re-import produced
+        const [again] = roundTrip([song(melody, author, reparsed.text)])
+        expect(again).toEqual(reparsed)
+      }
+    }
+  })
+
   it('round trips a minimal song', () => {
     const song: Song = {
       song_id: 'aaaa',

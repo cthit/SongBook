@@ -1,8 +1,9 @@
+import { escapeFieldValue, unescapeFieldValue } from '@/lib/seed'
 import type { Song, Tag } from '@/lib/types'
 
 // Same lines as the seed parser reads (`MELODY` / `AUTHOR` in seed.ts), as whole lines
-const MELODY_LINE = /^(\*?[mM][eE][lL]:)([^*]+)(.*)$/
-const AUTHOR_LINE = /^(\*?[tT][eE][xX][tT]: )([^*]+)(.*)$/
+const MELODY_LINE = /^(\*?[mM][eE][lL]:)((?:\\[\\*]|[^*])+)(.*)$/
+const AUTHOR_LINE = /^(\*?[tT][eE][xX][tT]: )((?:\\[\\*]|[^*])+)(.*)$/
 const UNTAGGED = 'Övrigt'
 
 const underline = (title: string, char: '=' | '-') => char.repeat(Math.max(3, title.length))
@@ -20,6 +21,7 @@ function removeLine(lines: string[], index: number): string[] {
  * reads. The song's fields are authoritative: the first such line (the one the parser reads) gets
  * the current value, keeping its formatting, and when the field is empty every such line is
  * removed so the parser doesn't pick up another one. Returns null when there is no such line.
+ * `*` and `\` in the value are escaped, otherwise the parser would stop at a `*`.
  */
 function replaceLine(
   lines: string[],
@@ -32,7 +34,9 @@ function replaceLine(
   if (value) {
     const [, label, current, rest] = pattern.exec(lines[index])!
     // Unchanged lines are kept exactly as they are, e.g. `Mel:Snickerboa`
-    return current.trim() === value ? lines : lines.with(index, format(label, value, rest))
+    return unescapeFieldValue(current).trim() === value
+      ? lines
+      : lines.with(index, format(label, escapeFieldValue(value), rest))
   }
   let result = lines
   for (; index !== -1; index = result.findIndex((line) => pattern.test(line))) {
@@ -60,9 +64,9 @@ function songToMarkdown(song: Song): string {
   lines = withAuthor ?? withMelody ?? lines
 
   const result = [song.title, underline(song.title, '-'), '']
-  if (melody && !withMelody) result.push(`*Mel: ${melody}*`, '')
+  if (melody && !withMelody) result.push(`*Mel: ${escapeFieldValue(melody)}*`, '')
   result.push(lines.join('\n').trim(), '')
-  if (author && !withAuthor) result.push(`*Text: ${author}*`, '')
+  if (author && !withAuthor) result.push(`*Text: ${escapeFieldValue(author)}*`, '')
   return result.join('\n')
 }
 
