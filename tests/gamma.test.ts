@@ -34,6 +34,7 @@ afterAll(() => gamma.close())
 
 const configFor = (gammaUrl: string, internalUrl?: string) =>
   gammaConfig({
+    NODE_ENV: 'test',
     APP_URL,
     GAMMA_URL: gammaUrl,
     GAMMA_INTERNAL_URL: internalUrl,
@@ -41,7 +42,7 @@ const configFor = (gammaUrl: string, internalUrl?: string) =>
     GAMMA_CLIENT_SECRET: CLIENT.clientSecret,
     GAMMA_API_KEY_ID: CLIENT.apiKeyId,
     GAMMA_API_KEY_TOKEN: CLIENT.apiKeyToken,
-  } as NodeJS.ProcessEnv)
+  })
 
 /** Runs the whole sign in like /auth/login, the browser and /auth/callback do */
 async function signIn(config: GammaConfig) {
